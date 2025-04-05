@@ -1,0 +1,3466 @@
+<title>World Map</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+@font-face {
+  font-family: 'Fredoka';
+  src: local('Fredoka Semibold');
+  font-weight: 600;
+}
+
+body {
+  margin: 0;
+  padding: 0; /* Remove padding */
+  background: #0000; /* Changed from #1a1a1a to match ocean color */
+  color: #002451;
+  font-family: 'Fredoka', serif;
+  font-weight: 600;
+  overflow: hidden; /* Prevent scrolling */
+}
+
+.map-container {
+  width: 100vw; /* Full viewport width */
+  height: 100vh; /* Full viewport height */
+  margin: 0.0;
+}
+
+.world-map {
+  width: 100%;
+  height: 100%;
+  shape-rendering: crispEdges;
+  background-color: #001a3a; /* Dark blue for water */
+}
+
+.country {
+  stroke: none;
+  stroke-width: 0;
+  vector-effect: non-scaling-stroke;
+  transition: fill 0.2s;
+}
+
+.country:hover {
+  filter: brightness(0.5);
+  cursor: pointer;
+}
+
+.tooltip {
+  position: absolute;
+  padding: 5px;
+  background: #000000ea;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: 'Fredoka', serif;
+  font-weight: 600;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s;
+  white-space: nowrap; /* Update tooltip styles to handle HTML content */
+  z-index: 2100; /* Keep tooltips above everything */
+}
+
+.controls {
+  display: flex;
+  background: linear-gradient(90deg, #191919, #272727);
+  gap: 20px;
+  font-family: "Fredoka";
+}
+
+.map-toggle {
+  border-radius: 10px;
+  height: 25px;
+  width: 30px;
+  border-width: 0px;
+  background: linear-gradient(45deg, #a5a5a5, #ffff);
+}
+  
+.settings {
+ border-radius: 10px;
+  height: 25px;
+  width: 30px;
+  border-width: 0px;
+  background: linear-gradient(45deg, #a5a5a5, #ffff);
+}
+
+/* Updated command button styles */
+.command-button {
+  width: 100%;
+  padding: 10px;
+  margin: 5px 0;
+  background: linear-gradient(45deg, #333, #3a3a3a);
+  border: none;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Fredoka', serif;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-size: 200% 200%;
+  background-position: 0% 0%;
+}
+
+/* Add unique gradients for each command button */
+.command-button:nth-child(1) {
+  background: linear-gradient(45deg, #333, #ff4444);
+}
+
+.command-button:nth-child(2) {
+  background: linear-gradient(45deg, #333, #44ff44);
+}
+
+.command-button:nth-child(3) {
+  background: linear-gradient(45deg, #333, #4444ff);
+}
+
+.command-button:nth-child(4) {
+  background: linear-gradient(45deg, #333, #ffff44);
+}
+.command-button:nth-child(5) {
+  background: linear-gradient(45deg, #333, #ffab87);
+}
+.command-button:nth-child(6) {
+  background: linear-gradient(45deg, #333, #53d0a3);
+}
+.command-button:nth-child(7) {
+  background: linear-gradient(45deg, #333, #d053bd);
+}
+
+.command-button:hover {
+  background-position: 100% 100%;
+  transform: translateX(5px);
+}
+
+.category-panel {
+  position: fixed;
+  top: 30px;
+  left: 20px;
+  width: 300px;
+  background: rgba(0,0,0,0.8);
+  padding: 20px;
+  border-radius: 4px;
+  z-index: 2000; /* Increase from 1000 to 2000 */
+}
+
+.category-selector {
+  margin-bottom: 15px;
+  width: 100%;
+  padding: 8px;
+  background: #333;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-family: 'Fredoka', serif;
+  font-weight: 600;
+}
+
+.country-list {
+  max-height: 400px;
+  overflow-y: auto;
+  color: #fff;
+}
+
+.rank-number {
+  font-family: "Fredoka";
+  font-size: 13px;
+  color: #aaa;
+  text-align: left;
+}
+.country-item {
+  padding: 10px;
+  margin: 4px 0;
+  background: rgba(51, 51, 51, 0.5);
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.country-name {
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.country-flag {
+  width: 30px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+
+.country-value {
+  color: #aaa;
+}
+
+/* Add styles for time counter */
+.time-counter {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 24px;
+  color: #fff;
+  background: #0009;
+  padding: 10px 20px;
+  border-radius: 18px;
+  z-index: 2000; /* Increase from 1000 to 2000 */
+  font-family: 'Fredoka', serif;
+  font-weight: 700;
+}
+
+/* Add to existing CSS */
+.relations-panel {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 300px;
+  background: rgba(0,0,0,0.8);
+  padding: 20px;
+  border-radius: 4px;
+  z-index: 2000; /* Increase from 1000 to 2000 */
+  display: none;
+}
+
+.relations-panel h2 img {
+  width: 20px;
+  height: auto;
+  display: inline-block;
+  margin-right: 10px;
+  vertical-align: middle;
+  border-radius: 2px;
+}
+
+.relations-list {
+  margin: 10px 0;
+}
+
+.relations-list h3 {
+  margin: 5px 0;
+  color: #fff;
+  font-size: 16px;
+}
+
+.relation-item {
+  padding: 8px;
+  margin: 4px 0;
+  background: rgba(51, 51, 51, 0.5);
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #fff;
+}
+
+.relation-value {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Add to existing CSS */
+.leader-quote {
+  position: absolute;
+  padding: 15px;
+  background: rgba(0,0,0,0.9);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 14px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  max-width: 300px;
+  z-index: 2100; /* Keep quotes above everything */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  border-left: 4px solid #4a90e2;
+}
+
+.leader-quote::before {
+  content: '"';
+  font-size: 24px;
+  color: #4a90e2;
+}
+
+.leader-quote::after {
+  content: '"';
+  font-size: 24px;
+  color: #4a90e2;
+}
+
+/* Add CSS for the new profile panel */
+.country-profile {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 300px;
+  background: rgba(0,0,0,0.8);
+  padding: 20px;
+  border-radius: 4px;
+  z-index: 2000; /* Increase from 1000 to 2000 */
+  display: none;
+  font-family: 'Fredoka', serif;
+  color: #fff;
+}
+
+.country-profile h2 {
+  margin: 0 0 15px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 30px;
+}
+
+/* Add styles for the close button */
+.close-profile {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.close-profile:hover {
+  transform: scale(1.1);
+  color: #ff4444;
+}
+
+.profile-stat {
+  margin: 10px 0;
+  padding: 8px;
+  background: rgba(51, 51, 51, 0.2);
+  border-radius: 16px;
+}
+
+.profile-stat-label {
+  color: #aaa;
+  font-size: 0.9em;
+}
+
+.profile-stat-value {
+  font-size: 1.1em;
+  margin-top: 4px;
+}
+
+.allies-list {
+  margin-top: 10px;
+}
+
+.ally-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 5px 0;
+}
+
+/* Add styles for the force war interface */
+.force-war {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 20px;
+  background: rgba(51, 51, 51, 0.2);
+}
+
+.force-war-button {
+  width: 100%;
+  padding: 8px;
+  background: rgba(51, 51, 51, 0.5);
+  color: white;
+  font-family: "Fredoka";
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.force-war-button:hover {
+  background: rgba(71, 71, 71, 0.5);
+}
+
+.neighbor-list {
+  display: show;
+  max-height: 130px;
+  overflow-y: auto;
+}
+
+.neighbor-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  font-size: 16px;
+  margin: 4px 0;
+  background: rgba(51, 51, 51, 0.5);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.neighbor-option:hover {
+  background: rgba(71, 71, 71, 0.5);
+}
+
+.neighbor-relation {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Add this to the CSS section */
+.battle-alert {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  font-family: 'Fredoka', serif;
+  z-index: 1500; /* Set lower than panels but higher than base elements */
+  opacity: 0;
+  transform: translateY(100%);
+  transition: all 0.3s ease-in-out;
+  border-left: 4px solid #ff4444;
+  max-width: 400px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.battle-alert.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Remove army dot styles */
+.army-dot {
+  display: none; /* Hide any existing dots */
+}
+
+/* Add settings panel styles */
+.settings-panel {
+  position: fixed;
+  top: 50px;
+  left: 20px;
+  width: 300px;
+  background: rgba(0,0,0,0.8);
+  padding: 20px;
+  border-radius: 4px;
+  z-index: 2000; /* Increase from 1000 to 2000 */
+  display: none;
+  font-family: 'Fredoka', serif;
+  color: #fff;
+}
+
+.settings-panel h2 {
+  margin: 0 0 15px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.setting-item {
+  margin: 15px 0;
+}
+
+.setting-label {
+  display: block;
+  margin-bottom: 5px;
+  color: #aaa;
+}
+
+/* Slider styles */
+.setting-slider {
+  width: 100%;
+  height: 8px;
+  -webkit-appearance: none;
+  background: #444;
+  outline: none;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+.setting-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #4a90e2;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.setting-button {
+  width: 100%;
+  padding: 8px;
+  font-family: "fredoka";
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: background 0.3s;
+  margin: 5px 0;
+}
+
+.setting-button:hover {
+  background: #357abd;
+  background-size: 18px;
+}
+
+/* Toggle switch styles */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ff5e5e;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: #ff5ef8;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(26px);
+}
+
+/* Add to existing CSS */
+.commands-panel {
+  position: fixed;
+  top: 50px;
+  left: 20px;
+  width: 300px;
+  background: rgba(0,0,0,0.8);
+  padding: 20px;
+  border-radius: 7px;
+  z-index: 2000; /* Increase from 1000 to 2000 */
+  display: none;
+  font-family: 'Fredoka', serif;
+  color: #fff;
+}
+
+.command-button {
+  width: 100%;
+  padding: 10px;
+  margin: 5px 0;
+  background: linear-gradient(45deg, #333, #3a3a3a);
+  border: none;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Fredoka', serif;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-size: 200% 200%;
+  background-position: 0% 0%;
+}
+
+/* Add unique gradients for each command button */
+.command-button:nth-child(1) {
+  background: linear-gradient(45deg, #333, #ff4444);
+}
+
+.command-button:nth-child(2) {
+  background: linear-gradient(45deg, #333, #44ff44);
+}
+
+.command-button:nth-child(3) {
+  background: linear-gradient(45deg, #333, #4444ff);
+}
+
+.command-button:nth-child(4) {
+  background: linear-gradient(45deg, #333, #ffff44);
+}
+.command-button:nth-child(5) {
+  background: linear-gradient(45deg, #333, #fffab4);
+}
+
+.command-button:hover {
+  background-position: 100% 100%;
+  transform: translateX(5px);
+}
+  
+  .empire-options{
+  font-family: "Fredoka";
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.empire-option{
+  display: flex;
+  background: linear-gradient(140deg, #333, #d82fd0);
+  margin: 4px 0;
+  font-family: "Fredoka";
+  border-width: 0;
+  color: #fff;
+  width: 270px;
+  border-radius: 5px;
+  padding: 10px;
+  transition: background 0s;
+}
+
+.empire-option:hover {
+  background: #ffe077;
+  color: #000;
+  }
+/* Add newspaper popup styles */
+.newspaper-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #f4f0e5; /* Aged paper color */
+  color: #000;
+  padding: 30px;
+  max-width: 600px;
+  width: 90%;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  z-index: 3000; /* Keep newspaper above all other elements */
+  font-family: 'Times New Roman', serif;
+  display: none;
+  border: 2px solid #8b4513;
+  overflow-y: auto;
+  max-height: 80vh;
+}
+
+.newspaper-popup.show {
+  display: block;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.newspaper-header {
+  text-align: center;
+  border-bottom: 2px solid #000;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+}
+
+.newspaper-title {
+  font-size: 36px;
+  font-weight: bold;
+  margin: 0;
+  font-family: 'Old English Text MT', 'Times New Roman', serif;
+}
+
+.newspaper-date {
+  font-style: italic;
+  margin: 5px 0;
+}
+
+.newspaper-content {
+  column-count: 2;
+  column-gap: 20px;
+  text-align: justify;
+  line-height: 1.6;
+}
+
+.newspaper-image {
+  width: 100%;
+  margin: 10px 0;
+  filter: sepia(0.5);
+}
+
+.newspaper-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #000;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Make battle alerts clickable */
+.battle-alert {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.warning-text {
+  font-size: 11px;
+  color: #ff6666;
+  margin-left: 5px;
+  padding: 3px 8px;
+  background-color: rgba(255, 102, 0, 0.15);
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  animation: pulse 2s infinite;
+  text-shadow: 0 0 5px rgba(255,102,102,0.3);
+}
+
+.warning-text::before {
+  content: "⚠️";
+  font-size: 12px;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* Add troops dialog styles */
+.troops-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000;
+}
+
+.troops-dialog-content {
+  background: rgba(0, 0, 0, 0.9);
+  padding: 20px;
+  border-radius: 8px;
+  min-width: 300px;
+  color: white;
+  font-family: 'Fredoka', serif;
+}
+
+.troops-dialog h2 {
+  margin: 0 0 20px 0;
+  color: white;
+}
+
+.troops-select, .troops-input {
+  width: 100%;
+  padding: 8px;
+  margin: 10px 0;
+  background: #333;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-family: 'Fredoka', serif;
+}
+
+.troops-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.troops-buttons button {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #4a90e2;
+  color: white;
+  font-family: 'Fredoka', serif;
+  transition: background 0.3s;
+}
+
+.troops-buttons button:hover {
+  background: #357abd;
+}
+
+.troops-buttons button:last-child {
+  background: #666;
+}
+
+.troops-buttons button:last-child:hover {
+  background: #888;
+}
+</style>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://d3js.org/topojson.v3.min.js"></script>
+<script>
+const alertSound = new Audio('/newsound.wav');
+let alertVolume = 0.5; // Default volume (50%)
+
+function updateVolume() {
+  const volumeSlider = document.getElementById('volume-slider');
+  alertVolume = volumeSlider.value / 100;
+  
+  // Test the new volume with a quick sound
+  const testSound = new Audio('/newsound.wav');
+  testSound.volume = alertVolume;
+  testSound.play().catch(e => console.log('Audio test failed:', e));
+}
+
+function showBattleAlert(message, battleInfo = null) {
+  // Play alert sound with current volume setting
+  alertSound.volume = alertVolume;
+  alertSound.play().catch(e => console.log('Audio play failed:', e));
+
+  const existingAlerts = document.querySelectorAll('.battle-alert');
+  
+  // Move existing alerts up
+  existingAlerts.forEach((alert, index) => {
+    const height = alert.offsetHeight + 10; // Alert height + margin
+    alert.style.transform = `translateY(-${height * (existingAlerts.length - index)}px)`;
+  });
+
+  const alert = document.createElement('div');
+  alert.className = 'battle-alert';
+
+  // If it's a battle notification, add flags
+  if (battleInfo) {
+    const {attacker, defender} = battleInfo;
+    alert.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <img src="https://flagcdn.com/w40/${getCountryCode(attacker).toLowerCase()}.png" 
+             alt="${attacker} flag" 
+             style="width: 30px; height: 20px;">
+        <span>${message}</span>
+        <img src="https://flagcdn.com/w40/${getCountryCode(defender).toLowerCase()}.png" 
+             alt="${defender} flag" 
+             style="width: 30px; height: 20px;">
+      </div>
+    `;
+  } else {
+    // For non-battle messages, try to extract country name and add single flag if found
+    const countryMatch = message.match(/[🗽🎊🗡️]\s*(.*?)(?:\s+has|$)/);
+    if (countryMatch && countryMatch[1]) {
+      const country = countryMatch[1].trim();
+      alert.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <img src="https://flagcdn.com/w20/${getCountryCode(country).toLowerCase()}.png" 
+               alt="${country} flag" 
+               style="width: 20px; height: auto;">
+          <span>${message}</span>
+        </div>
+      `;
+    } else {
+      alert.textContent = message;
+    }
+  }
+  
+  // Add click handler if battleInfo is provided
+  if (battleInfo) {
+    alert.onclick = () => createNewspaper(battleInfo);
+  }
+  
+  document.body.appendChild(alert);
+
+  // Show alert
+  setTimeout(() => alert.classList.add('show'), 10);
+
+  // Remove alert after delay
+  setTimeout(() => {
+    alert.classList.remove('show');
+    setTimeout(() => {
+      alert.remove();
+      
+      // Reposition remaining alerts
+      const remainingAlerts = document.querySelectorAll('.battle-alert');
+      remainingAlerts.forEach((alert, index) => {
+        const height = alert.offsetHeight + 10;
+        alert.style.transform = `translateY(-${height * (remainingAlerts.length - index - 1)}px)`;
+      });
+    }, 300);
+  }, 3000);
+}
+
+// ... rest of the code remains the same ...
+</script>
+</head>
+<body>
+
+<!-- Add time counter div -->
+<div class="time-counter">2025</div>
+
+<div class="controls">
+  <button class="map-toggle political-view" onclick="toggleMap()" title="Switch Map View">
+    <i class="fas fa-globe"></i>
+  </button>
+    <button class="settings" onclick="toggleSettings()" title="Settings">
+    <i class="fas fa-gear"></i>
+  </button>
+  <button class="map-toggle" onclick="toggleCategoryPanel()" title="Show Categories">
+    <i class="fas fa-list"></i>
+  </button>
+  <!-- Add to controls div after the other buttons -->
+  <button class="map-toggle" onclick="toggleCommands()" title="Commands">
+    <i class="fas fa-terminal"></i>
+  </button>
+</div>
+
+<!-- Update the commands panel HTML -->
+<div class="commands-panel">
+  <h2>Commands</h2>
+  <button class="command-button" onclick="initiateCompleteCollapse()">
+    <i class="fas fa-bolt"></i> Complete Collapse
+  </button>
+  <button class="command-button" onclick="resetMap()">
+    <i class="fas fa-undo"></i> Reset Map
+  </button>
+  <button class="command-button" onclick="triggerRandomWar()">
+    <i class="fas fa-dice"></i> Random War
+  </button>
+  <button class="command-button" onclick="showGiveTroopsDialog()">
+    <i class="fas fa-users"></i> Give Troops
+  </button>
+    <button class="command-button" onclick="triggerRandomEvent()">
+    <i class="fas fa-random"></i> Random Event
+  </button>
+  <button class="command-button" onclick="toggleEmpireOptions()">
+    <i class="fas fa-crown"></i> Form Empire
+  </button>
+  
+  <div class="empire-options">
+    <button class="empire-option" onclick="formEmpire('Arab League')">Arab League <img src="https://flagcdn.com/w20/sa.png"</button>
+    <button class="empire-option" onclick="formEmpire('Soviet Union')">Soviet Union <img src="https://flagcdn.com/w20/ru.png"                                                                </button>
+    <button class="empire-option" onclick="formEmpire('BRICS')">BRICS <img src="https://flagcdn.com/w20/cn.png"</button>
+    <button class="empire-option" onclick="formEmpire('Russian Empire')">Russian Empire         <img src="https://flagcdn.com/w20/ru.png" </button>
+      <button class="empire-option" onclick="formEmpire('Achaemenid Empire (500BC)')">Achaemenaid Empire (500BC)        <img src="https://flagcdn.com/w20/ir.png" </button>
+    <button class="empire-option" onclick="formEmpire('East African Federation')">East African Federation<img src="https://flagcdn.com/w20/tz.png"</button>
+    <button class="empire-option" onclick="formEmpire('British Empire')">British Empire <img src="https://flagcdn.com/w20/gb.png"</button>
+    <button class="empire-option" onclick="formEmpire('French Empire')">French Empire <img src="https://flagcdn.com/w20/fr.png"</button>
+    <button class="empire-option" onclick="formEmpire('Patria Grandé')">Patria Grandé<img src="https://flagcdn.com/w20/ar.png"</button>
+    <button class="empire-option" onclick="formEmpire('Qing Dynasty')">Qing Dynasty <img src="https://flagcdn.com/w20/cn.png"</button>
+    <button class="empire-option" onclick="formEmpire('Ottoman Empire')">Ottoman Empire <img src="https://flagcdn.com/w20/tr.png"</button>
+    <button class="empire-option" onclick="formEmpire('Benelux')">Benelux <img src="https://flagcdn.com/w20/nl.png"</button>
+   <button class="empire-option" onclick="formEmpire('Yugoslavia')">Yugoslavia <img src="https://flagcdn.com/w20/rs.png"</button>
+    <button class="empire-option" onclick="formEmpire('African Union')">African Union <img src="https://flagcdn.com/w20/za.png"</button>
+    <button class="empire-option" onclick="formEmpire('Spanish Empire (1714)')">Spanish Empire (1714) <img src="https://flagcdn.com/w20/es.png"
+                                                                                                        </button>
+    <button class="empire-option"onclick="formEmpire('Carribbean Empire')"">Carribbean Empire <img src="https://flagcdn.com/w20/bs.png"
+    </button>
+    <button class="empire-option" onclick="formEmpire('North Sea Empire')">North Sea Empire <img src="https://flagcdn.com/w20/dk.png" </button>
+  <button class="empire-option"
+onclick="formEmpire('Finnic Union')">Finnic Union <img src="https://flagcdn.com/w20/fi.png" </button>
+    <button class ="empire-option" onclick="formEmpire('Kushan Empire')">Kushan Empire<img src="https://flagcdn.com/w20/af.png"</button>
+    <button class="empire-option" onclick="formEmpire('Italian Empire')">Italian Empire <img src="https://flagcdn.com/w20/it.png" </button>
+    <button class="empire-option" onclick="formEmpire('First Bulgarian Empire')">First Bulgarian Empire <img src="https://flagcdn.com/w20/bg.png" </button>
+    <button class="empire-option" onclick="formEmpire('Dutch Empire (17th Century)')">Dutch Empire (17th Century) <img src="https://flagcdn.com/w20/nl.png" </button>
+    <button class="empire-option" onclick="formEmpire('Belgian Empire')">Belgian Empire  <img src="https://flagcdn.com/w20/be.png" </button>
+  </div>
+</div>
+
+<!-- Add settings panel -->
+<div class="settings-panel">
+  <h2>Settings</h2>
+
+  <div class="setting-item">
+    <label class="setting-label">Aggressiveness</label>
+    <input type="range" class="setting-slider" id="aggression-slider" 
+           min="1" max="10" value="1"
+      onchange="updateSettings()">
+  </div> 
+  
+  <div class="setting-item">
+    <label class="setting-label">Alert Volume</label>
+    <input type="range" class="setting-slider" id="volume-slider" 
+           min="0" max="100" value="50"
+           onchange="updateVolume()">
+  </div>
+
+  <div class="setting-item">
+    <label class="setting-label">Leaderboard Location</label>
+    <label class="toggle-switch">
+      <input type="checkbox" id="leaderboard-location" onchange="toggleLeaderboardLocation()">
+      <span class="toggle-slider"></span>
+    </label>
+    <span style="margin-left: 10px; font-size: 0.8em; color: #aaa;">
+      Left to Right
+    </span>
+  </div>
+
+  <div class="setting-item">
+    <button class="setting-button" onclick="regenerateColors()">
+      Reset Colors
+    </button>
+  </div>
+</div>
+
+<div class="category-panel" style="display: none;">
+  <select class="category-selector" onchange="updateCategoryList()">
+    <option value="military">Military Strength</option>
+  </select>
+  <div class="country-list"></div>
+</div>
+
+<!-- Add relations panel -->
+<div class="relations-panel">
+  <h2 style="color: #fff; margin-top: 0;">
+    Relations
+  </h2>
+  <div class="relations-list" id="top-relations">
+    <h3>Top Relations</h3>
+  </div>
+  <div class="relations-list" id="bottom-relations">
+    <h3>Bottom Relations</h3>
+  </div>
+</div>
+
+<!-- Add country profile panel -->
+<div class="country-profile">
+  <button class="close-profile" onclick="closeCountryProfile()">
+    <i class="fas fa-times"></i>
+  </button>
+  <h2>
+    <img class="country-flag" alt="">
+    <span class="country-name"></span>
+  </h2>
+  
+  <div class="profile-stat">
+    <div class="profile-stat-label">🪖 Active Military Personnel</div>
+    <div class="profile-stat-value military-value"></div>
+  </div> 
+  
+    <div class="profile-stat">
+    <div class="profile-stat-label">💵 Economy (GDP)</div>
+    <div class="profile-stat-value economy-value"></div>
+  </div>
+  
+  <div class="profile-stat">
+    <div class="profile-stat-label">🤝 Top Allies</div>
+    <div class="allies-list"></div>
+  </div>
+  
+
+  <div class="force-war">
+    <button class="force-war-button" onclick="toggleNeighborList()">
+      <i class="fas fa-crosshairs"></i> Force War
+    </button>
+    <div class="neighbor-list"></div>
+  </div>
+</div>
+
+<!-- Add troops dialog -->
+<div class="troops-dialog" style="display: none;">
+  <div class="troops-dialog-content">
+    <h2>Give Troops</h2>
+    <select id="country-select" class="troops-select"></select>
+    <input type="number" id="troops-amount" class="troops-input" placeholder="Enter number of troops" min="0">
+    <div class="troops-buttons">
+      <button onclick="giveTroops()">Give</button>
+      <button onclick="closeGiveTroopsDialog()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="map-container">
+  <div id="tooltip" class="tooltip"></div>
+</div>
+
+<script>
+const countryData = {
+  military: {
+    'United States of America': 250000,  // Strongest military power
+    'China': 220000,         // Second strongest
+    'Russia': 200000,        // Third strongest
+    'India': 80000,          // Strong regional power
+    'United Kingdom': 65000, // Major NATO power
+    'France': 62000,         // Major NATO power
+    'Germany': 60000,        // Major European power
+    'Japan': 50000,          // Strong Asian power
+    'South Korea': 45000,    // Strong Asian power
+    'Turkey': 40000,         // Regional power
+    'Israel': 38000,         // Regional power
+    'Italy': 45000,          // European power
+    'Brazil': 55000,         // South American leader
+    'Pakistan': 50000,       // Regional power
+    'Iran': 35000,           // Regional power
+    'Indonesia': 30000,      // Add Indonesia's military power
+    'Australia': 28000,      // Regional power
+    'Spain': 25000,          // European power
+    'Poland': 25000,         // European power
+    'Canada': 25000,         // North American power
+    'Egypt': 25000,          // African power
+    'Saudi Arabia': 25000,   // Middle Eastern power
+    'Argentina': 28000,      // South American power
+    'Vietnam': 22000,        // Southeast Asian power
+    'Mexico': 20000,         // North American power
+    'Sweden': 18000,         // European power
+    'Thailand': 18000,       // Southeast Asian power
+    'Colombia': 18000,       // South American power
+    'South Africa': 18000,   // African power
+    'Malaysia': 15000,       // Southeast Asian power
+    'Venezuela': 15000,      // South American power
+    'Peru': 15000,          // South American power
+    'Chile': 15000,         // South American power
+    'Ukraine': 15000,       // Eastern European power
+    'Greece': 15000,        // European power
+    'Romania': 15000,       // European power
+    'Czech Republic': 12000, // European power
+    'Philippines': 12000,    // Southeast Asian power
+    'Morocco': 12000,       // North African power
+    'Algeria': 12000,       // North African power
+    'Nigeria': 12000,       // African power
+    'Ethiopia': 12000,      // African power
+    'Ecuador': 10000,       // South American power
+    'Bolivia': 10000,       // South American power
+    'Paraguay': 8000,       // South American power
+    'Uruguay': 8000,        // South American power
+    'Guyana': 5000,         // South American power
+    'Suriname': 5000,   // South American power
+    'Guatemala': 5000,
+  },
+  economy: {
+    'United States of America': 22990,
+    'China': 17730,
+    'Japan': 4872,
+    'Germany': 4271,
+    'United Kingdom': 3187,
+    'India': 3176,
+    'France': 2937,
+    'Italy': 2106,
+    'Canada': 1991,
+    'Russia': 1829,
+    'Brazil': 1608,
+    'South Korea': 1651,
+    'Australia': 1542,
+    'Spain': 1394,
+    'Indonesia': 1186,
+  },
+  land: {
+    'Russia': 17098246,
+    'China': 9596961,
+    'United States': 9833517,
+    'Canada': 9984670,
+    'Brazil': 8515770,
+    'Australia': 7741220,
+    'India': 3287263,
+    'Argentina': 2780400,
+    'Kazakhstan': 2724900,
+    'Algeria': 2381741,
+    'Congo': 2344858,
+    'Saudi Arabia': 2149690,
+    'Mexico': 1964375,
+    'Indonesia': 1904569,
+    'Sudan': 1861484,
+    'Libya': 1759540,
+    'Iran': 1648195,
+    'Mongolia': 1564110,
+    'Peru': 1285216,
+    'Chad': 1284000,
+  }
+};
+
+const empireNames = {
+  'Saudi Arabia': 'Saudi Arabia',
+  'Russia': {
+    'Soviet Union': 'Russia',
+    'Russian Empire': 'Russia'
+  },
+  'Turkey': 'Turkey',
+  'United Kingdom': 'United Kingdom',
+  'France': 'France', 
+  'China': {
+    'Qing Dynasty': 'China',
+    'BRICS': 'China'
+  },
+  'South Africa': 'South Africa'
+};
+
+const conqueredTerritories = {}; // Track which countries have been conquered by whom
+const occupationStartYears = {}; // Track when countries were conquered
+const independenceMovements = {}; // Track independence progress
+
+const INDEPENDENCE_STATES = {
+  NONE: 0,
+  PROTESTS: 1,
+  AUTONOMOUS: 2,
+  INDEPENDENT: 3
+};
+
+let independenceEnabled = true;
+let aggressionLevel = 1;
+
+function toggleSettings() {
+  const panel = document.querySelector('.settings-panel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function updateSettings() {
+  aggressionLevel = parseInt(document.getElementById('aggression-slider').value);
+}
+
+function regenerateColors() {
+  const countryCount = countries.features.length;
+  politicalColors = generateColors(countryCount);
+  updateMap();
+}
+
+function areNeighbors(country1, country2) {
+  if (!countries || !countries.features) return false;
+  
+  const feature1 = countries.features.find(f => f.properties.name === country1);
+  const feature2 = countries.features.find(f => f.properties.name === country2);
+  
+  if (!feature1 || !feature2) return false;
+
+  // Calculate simplified geometries for the countries
+  const bounds1 = path.bounds(feature1);
+  const bounds2 = path.bounds(feature2);
+  
+  // Check if bounding boxes overlap or are very close
+  const margin = 1; // Small margin to account for narrow connections
+  return !(bounds1[1][0] + margin < bounds2[0][0] || 
+           bounds2[1][0] + margin < bounds1[0][0] || 
+           bounds1[1][1] + margin < bounds2[0][1] || 
+           bounds2[1][1] + margin < bounds1[0][1]);
+}
+
+// Update the triggerRandomBattles function to use aggressionLevel
+function triggerRandomBattles() {
+  if (!countries || !countries.features) return;
+  
+  const availableCountries = countries.features
+    .map(f => f.properties.name)
+    .filter(name => !conqueredTerritories[name]);
+    
+  if (availableCountries.length < 2) return;
+  
+  // Random chance for battle - increased by aggressionLevel
+  if (Math.random() < 0.1 * aggressionLevel) { // 10% * aggressionLevel chance each tick
+    const attacker = availableCountries[Math.floor(Math.random() * availableCountries.length)];
+    
+    const possibleDefenders = availableCountries.filter(defender => 
+      defender !== attacker && 
+      areNeighbors(attacker, defender)
+    );
+    
+    if (possibleDefenders.length > 0) {
+      const defender = possibleDefenders[Math.floor(Math.random() * possibleDefenders.length)];
+      const result = simulateBattle(attacker, defender);
+      if (result) {
+        updateMap();
+      }
+    }
+  }
+}
+
+// Modify checkForIndependenceMovements to respect independenceEnabled setting
+function checkForIndependenceMovements() {
+  if (!independenceEnabled) return;
+  
+  Object.entries(conqueredTerritories).forEach(([territory, conqueror]) => {
+    const startYear = occupationStartYears[territory] || currentYear;
+    const yearsOccupied = currentYear - startYear;
+    
+    if (independenceMovements[territory] || yearsOccupied < 50) return;
+    
+    if (Math.random() < 0.02) {
+      independenceMovements[territory] = {
+        state: INDEPENDENCE_STATES.PROTESTS,
+        progress: 0,
+        startYear: currentYear
+      };
+      
+      showBattleAlert(`🗽 Independence movements have begun in ${territory}!`);
+    }
+  });
+}
+
+function simulateBattle(attacker, defender) {
+  // Get military powers
+  const attackerPower = getArmyPower(attacker) * (0.8 + Math.random() * 0.4); // Add 20% random factor
+  const defenderPower = getArmyPower(defender) * (0.8 + Math.random() * 0.4);
+  
+  // Create battle info object
+  const battleInfo = {
+    attacker,
+    defender,
+    attackerPower,
+    defenderPower,
+    winner: attackerPower > defenderPower ? attacker : defender
+  };
+
+  // Show battle alert regardless of outcome
+  showBattleAlert(`🗡️ Battle Alert!\n${attacker} has declared war on ${defender}! Click here to see more!`, battleInfo);
+
+  // Determine winner (stronger nation wins)
+  const winner = attackerPower > defenderPower ? attacker : defender;
+  const loser = attackerPower > defenderPower ? defender : attacker;
+  
+  // Show victory message after slight delay
+  setTimeout(() => {
+    showBattleAlert(`${winner} has conquered ${loser}!`, battleInfo);
+  }, 2500);
+
+  // Transfer any territories the loser had conquered
+  Object.keys(conqueredTerritories).forEach(territory => {
+    if (conqueredTerritories[territory] === loser) {
+      conqueredTerritories[territory] = winner;
+    }
+  });
+  
+  // Conquer the loser
+  conqueredTerritories[loser] = winner;
+
+  // Record the occupation start year
+  occupationStartYears[loser] = currentYear;
+
+  // Add the loser's army power to the winner's army
+  countryArmies[winner] = (countryArmies[winner] || 0) + (countryArmies[loser] || 0);
+  delete countryArmies[loser];
+  
+  // Transfer GDP to victor
+  if (countryData.economy[loser]) {
+    countryData.economy[winner] = 
+      (countryData.economy[winner] || 0) + countryData.economy[loser];
+    delete countryData.economy[loser];
+  }
+
+  // Update the category list to reflect the changes
+  updateCategoryList();
+  
+  return {
+    winner,
+    loser
+  };
+}
+
+// Add newspaper-related functions
+function createNewspaper(battleInfo) {
+  // Generate date using currentYear instead of current date
+  const date = new Date(currentYear, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1)
+    .toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+  // Generate a more unique headline based on battle outcome and circumstances
+  const headline = generateUniqueBattleHeadline(battleInfo);
+  
+  // Create newspaper HTML
+  const newspaperHTML = `
+    <div class="newspaper-popup">
+      <button class="newspaper-close" onclick="closeNewspaper()">&times;</button>
+      <div class="newspaper-header">
+        <h1 class="newspaper-title">The Global Herald</h1>
+        <div class="newspaper-date">${date}</div>
+        <h2>${headline}</h2>
+      </div>
+      <div class="newspaper-content">
+        ${generateBattleDescription(battleInfo)}
+      </div>
+    </div>
+  `;
+
+  // Add newspaper to document
+  document.body.insertAdjacentHTML('beforeend', newspaperHTML);
+  
+  // Show newspaper
+  setTimeout(() => {
+    document.querySelector('.newspaper-popup').classList.add('show');
+  }, 10);
+}
+
+// Add new function to generate unique headlines
+function generateUniqueBattleHeadline(battleInfo) {
+  const { attacker, defender, attackerPower, defenderPower, winner } = battleInfo;
+  const headlines = [
+    `BREAKING: ${winner} Triumphs in Decisive Military Victory`,
+    `Global Shock as ${winner} Forces Overwhelm ${winner === attacker ? defender : attacker}`,
+    `${winner.toUpperCase()} CONQUERS: World Map Redrawn in Stunning Campaign`,
+    `Historic Power Shift: ${winner} Emerges Victorious in Major Conflict`,
+    `${winner} Forces Claim Total Victory in Revolutionary Campaign`,
+    `WORLD ORDER SHIFTS: ${winner} Achieves Unprecedented Military Success`,
+    `${winner} Expansion: New Superpower Emerges After Decisive Victory`,
+    `Military Experts Stunned by ${winner}'s Strategic Triumph`,
+    `${winner} Dominance: Global Community Reacts to New World Power`,
+    `Geopolitical Earthquake: ${winner} Reshapes International Boundaries`
+  ];
+  
+  // Select random headline
+  const baseHeadline = headlines[Math.floor(Math.random() * headlines.length)];
+  
+  // If it was a particularly close battle (within 10% difference)
+  if (Math.abs(attackerPower - defenderPower) / Math.max(attackerPower, defenderPower) < 0.1) {
+    return `In Razor-Thin Victory: ${baseHeadline}`;
+  }
+  
+  // If it was a massive power difference (more than 3x)
+  if (Math.max(attackerPower, defenderPower) / Math.min(attackerPower, defenderPower) > 3) {
+    return `In Overwhelming Display: ${baseHeadline}`;
+  }
+  
+  return baseHeadline;
+}
+
+// New function to generate battle description
+function generateBattleDescription(battleInfo) {
+  const { attacker, defender, attackerPower, defenderPower, winner } = battleInfo;
+  const loser = winner === attacker ? defender : attacker;
+  
+  // Calculate power difference percentage
+  const powerDiff = Math.abs(attackerPower - defenderPower) / Math.min(attackerPower, defenderPower) * 100;
+  
+  // Generate random battle details
+  const locations = [
+    'along the border',
+    'in disputed territory',
+    'near the capital',
+    'in strategic locations',
+    'across multiple fronts',
+    'in key industrial regions',
+    'around major population centers',
+    'in contested provinces'
+  ];
+  
+  const battleLocation = locations[Math.floor(Math.random() * locations.length)];
+  
+  // Generate first paragraph about the battle
+  let description = `
+    <p>In a ${powerDiff > 50 ? 'decisive' : 'hard-fought'} military campaign ${battleLocation}, 
+    forces from ${winner} have achieved a complete victory over ${loser}. Military analysts estimate
+    the engagement involved approximately ${Math.floor(attackerPower).toLocaleString()} troops from
+    ${attacker} facing off against ${Math.floor(defenderPower).toLocaleString()} troops from ${defender}.</p>
+  `;
+  
+  // Add second paragraph about the outcome
+  if (powerDiff > 50) {
+    description += `
+      <p>The overwhelming superiority of ${winner}'s forces led to a swift and decisive victory,
+      with minimal resistance from ${loser}'s military. Experts attribute this success to
+      ${winner}'s superior military technology and strategic planning.</p>
+    `;
+  } else if (powerDiff > 20) {
+    description += `
+      <p>Despite significant resistance, ${winner}'s military prowess ultimately proved superior,
+      leading to a clear victory after several days of intense combat. The conflict has
+      significantly altered the balance of power in the region.</p>
+    `;
+  } else {
+    description += `
+      <p>In what military observers are calling one of the most closely matched conflicts in recent
+      history, ${winner}'s forces eventually prevailed through superior tactics and determination.
+      The victory came at a significant cost to both sides.</p>
+    `;
+  }
+  
+  // Add third paragraph about consequences
+  description += `
+    <p>Following this historic victory, ${winner} has formally annexed ${loser},
+    marking a significant shift in global geopolitics. International observers are closely
+    monitoring the situation as ${winner} begins the process of consolidating control over
+    its newly acquired territory. The long-term implications of this conquest remain to be seen,
+    but experts agree this marks a crucial moment in world history.</p>
+  `;
+  
+  return description;
+}
+
+function closeNewspaper() {
+  const newspaper = document.querySelector('.newspaper-popup');
+  if (newspaper) {
+    newspaper.classList.remove('show');
+    setTimeout(() => newspaper.remove(), 300);
+  }
+}
+
+// Add independence movement checks
+function checkForIndependenceMovements() {
+  Object.entries(conqueredTerritories).forEach(([territory, conqueror]) => {
+    const startYear = occupationStartYears[territory] || currentYear;
+    const yearsOccupied = currentYear - startYear;
+    
+    // Don't check if movement already started or if less than 50 years
+    if (independenceMovements[territory] || yearsOccupied < 50) return;
+    
+    // 2% chance each year after 50 years
+    if (Math.random() < 0.02) {
+      independenceMovements[territory] = {
+        state: INDEPENDENCE_STATES.PROTESTS,
+        progress: 0,
+        startYear: currentYear
+      };
+      
+      // Show alert about protests beginning
+      showBattleAlert(`🗽 Independence movements have begun in ${territory}!`);
+    }
+  });
+}
+
+// Add progress tracking for independence movements
+function updateIndependenceMovements() {
+  Object.entries(independenceMovements).forEach(([territory, movement]) => {
+    // Calculate years since movement started
+    const yearsSinceStart = currentYear - movement.startYear;
+    
+    // Progress through states over 30 years
+    switch(movement.state) {
+      case INDEPENDENCE_STATES.PROTESTS:
+        movement.progress += Math.random() * 0.3; // Random progress
+        if (movement.progress >= 10 && yearsSinceStart >= 10) {
+          movement.state = INDEPENDENCE_STATES.AUTONOMOUS;
+          showBattleAlert(`🏛️ ${territory} has become an autonomous territory!`);
+        }
+        break;
+        
+      case INDEPENDENCE_STATES.AUTONOMOUS:
+        movement.progress += Math.random() * 0.2;
+        if (movement.progress >= 20 && yearsSinceStart >= 30) {
+          // Get the conqueror before deleting territories
+          const conqueror = conqueredTerritories[territory];
+          
+          // Calculate troops to transfer (use original military value or default)
+          const troopsToTransfer = countryData.military[territory] || 5000;
+          
+          // Remove troops from conqueror
+          if (countryArmies[conqueror]) {
+            countryArmies[conqueror] = Math.max(0, countryArmies[conqueror] - troopsToTransfer);
+          }
+          
+          // Give troops to newly independent nation
+          countryArmies[territory] = troopsToTransfer;
+          
+          // Grant independence
+          delete conqueredTerritories[territory];
+          delete independenceMovements[territory];
+          
+          showBattleAlert(`🎊 ${territory} has declared independence! ${troopsToTransfer.toLocaleString()} troops have been transferred from ${conqueror}!`);
+          
+          // Update displays
+          updateMap();
+          updateCategoryList();
+        }
+        break;
+    }
+  });
+}
+
+function toggleLeaderboardLocation() {
+  const panel = document.querySelector('.category-panel');
+  const isRightSide = document.getElementById('leaderboard-location').checked;
+  
+  if (isRightSide) {
+    panel.style.left = 'auto';
+    panel.style.right = '20px';
+  } else {
+    panel.style.right = 'auto';
+    panel.style.left = '20px';
+  }
+}
+
+// Modify the interval timer to include battle simulation
+// Add after all other code:
+function checkForSeveredTies() {
+  if (!countries || !countries.features) return;
+  
+  // 2% chance each tick for severed ties event
+  if (Math.random() < 0.02) {
+    const availableCountries = countries.features
+      .map(f => f.properties.name)
+      .filter(name => !conqueredTerritories[name]);
+      
+    if (availableCountries.length < 2) return;
+    
+    // Pick two random countries
+    const country1 = availableCountries[Math.floor(Math.random() * availableCountries.length)];
+    const country2 = availableCountries.filter(c => c !== country1)[Math.floor(Math.random() * (availableCountries.length - 1))];
+    
+    // Only sever ties if they had non-neutral relations
+    if (Math.abs(countryRelations[country1][country2]) > 0.1) {
+      // Set relations to neutral (0)
+      countryRelations[country1][country2] = 0;
+      countryRelations[country2][country1] = 0;
+      
+      // Show alert with both flags
+      showBattleAlert(`💔 Diplomatic relations severed between ${country1} and ${country2}!`, {
+        attacker: country1,
+        defender: country2
+      });
+      
+      // Update map if in relations view
+      if (currentView === 'relations') {
+        updateMap();
+      }
+    }
+  }
+}
+
+function checkForRecruitment() {
+  if (!countries || !countries.features) return;
+  
+  // 5% chance each tick for recruitment event
+  if (Math.random() < 0.05) {
+    const availableCountries = countries.features
+      .map(f => f.properties.name)
+      .filter(name => !conqueredTerritories[name]);
+      
+    if (availableCountries.length === 0) return;
+    
+    // Pick random country
+    const country = availableCountries[Math.floor(Math.random() * availableCountries.length)];
+    
+    // Generate random number of recruits (500-2500)
+    const recruits = Math.floor(Math.random() * 2000) + 500;
+    
+    // Add recruits to country's army
+    countryArmies[country] = (countryArmies[country] || 0) + recruits;
+    
+    // Show alert with country flag
+    showBattleAlert(`⚔️ ${country} has recruited ${recruits.toLocaleString()} new soldiers`, {
+      attacker: country,
+      defender: country // Pass same country twice to get flag displayed
+    });
+    
+    // Update displays if category panel is showing military
+    const categorySelector = document.querySelector('.category-selector');
+    if (categorySelector && categorySelector.value === 'military') {
+      updateCategoryList();
+    }
+  }
+}
+
+function checkForMilitaryIncidents() {
+  if (!countries || !countries.features) return;
+  
+  // 5% chance each tick for military incident (same as recruitment)
+  if (Math.random() < 0.05) {
+    const availableCountries = countries.features
+      .map(f => f.properties.name)
+      .filter(name => !conqueredTerritories[name] && countryArmies[name] > 1000); // Must have >1000 troops
+      
+    if (availableCountries.length === 0) return;
+    
+    // Pick random country
+    const country = availableCountries[Math.floor(Math.random() * availableCountries.length)];
+    
+    // Generate random number of casualties (150-900)
+    const casualties = Math.floor(Math.random() * 750) + 150;
+    
+    // Different types of incidents
+    const incidents = [
+      "injuries during training exercises",
+      "soldiers quitting due to low morale",
+      "undetected mines in training grounds",
+      "equipment malfunction",
+      "training accident",
+      "food poisoning outbreak",
+      "mass desertion",
+      "vehicle collision",
+      "illness outbreak in barracks",
+      "helicopter crash during exercises"
+    ];
+    
+    const incident = incidents[Math.floor(Math.random() * incidents.length)];
+    
+    // Ensure army doesn't go below 0
+    countryArmies[country] = Math.max(0, (countryArmies[country] || 0) - casualties);
+    
+    // Show alert with country flag
+    showBattleAlert(`⚠️ ${country} has lost ${casualties.toLocaleString()} soldiers due to ${incident}`, {
+      attacker: country,
+      defender: country // Pass same country twice to get flag displayed
+    });
+    
+    // Update displays if category panel is showing military
+    const categorySelector = document.querySelector('.category-selector');
+    if (categorySelector && categorySelector.value === 'military') {
+      updateCategoryList();
+    }
+  }
+}
+
+setInterval(() => {
+  updateYear();
+  triggerRandomBattles();
+  checkForIndependenceMovements();
+  updateIndependenceMovements();
+  checkForSeveredTies(); 
+  checkForRecruitment();
+  checkForMilitaryIncidents();
+}, 1000);
+
+// ... rest of the code remains the same ...
+
+const width = window.innerWidth;  // Use window width
+const height = window.innerHeight; // Use window height
+
+let countries = null; // Move the countries variable declaration to the top level
+const svg = d3.select(".map-container")
+  .append("svg")
+  .attr("viewBox", `0 0 ${width} ${height}`)
+  .attr("class", "world-map");
+
+const projection = d3.geoMercator()
+  .scale(Math.min(width / 2, height / 2)) // Scale based on viewport size
+  .translate([width / 2, height / 1.5]);
+
+const path = d3.geoPath()
+  .projection(projection);
+
+const tooltip = d3.select("#tooltip");
+
+// Add time counter variables
+let currentYear = 2025;
+const timeCounter = document.querySelector('.time-counter');
+
+// Update year function
+function updateYear() {
+  currentYear++;
+  timeCounter.textContent = `${currentYear}`;
+}
+
+// Remove alliance-related constants
+const allianceColors = {
+  'NEUTRAL': '#808080'  // Keep only neutral
+};
+
+// Remove alliance application system
+const allianceApplications = {}; // Empty object
+const countryAlliances = {}; // Empty object 
+
+// Add relation data (example values from -1 to 1, where -1 is hostile, 0 is neutral, 1 is friendly)
+const countryRelations = {};
+
+// Update South American armies in countryArmies
+const countryArmies = {
+  // Major Powers
+  'United States of America': 250000,
+  'China': 220000,
+  'Russia': 200000,
+  'India': 80000,
+  'United Kingdom': 65000,
+  'France': 62000,
+  'Germany': 60000,
+  'Japan': 50000,
+  
+  // Medium Powers
+  'South Korea': 45000,
+  'Turkey': 40000,
+  'Israel': 38000,
+  'Italy': 45000,
+  'Brazil': 55000,
+  'Pakistan': 50000,
+  'Iran': 35000,
+  'Indonesia': 30000,
+  'Australia': 28000,
+  'Spain': 25000,
+  'Poland': 25000,
+  'Canada': 25000,
+  'Egypt': 25000,
+  'Saudi Arabia': 25000,
+  
+  // Regional Powers
+  'Argentina': 28000,
+  'Vietnam': 22000,
+  'Mexico': 20000,
+  'Sweden': 18000,
+  'Thailand': 18000,
+  'Colombia': 18000,
+  'South Africa': 18000,
+  'Malaysia': 15000,
+  'Venezuela': 15000,
+  'Peru': 15000,
+  'Chile': 15000,
+  'Ukraine': 15000,
+  'Greece': 15000,
+  'Romania': 15000,
+  
+  // Smaller Military Forces
+  'Philippines': 12000,
+  'Morocco': 12000,
+  'Algeria': 12000,
+  'Nigeria': 12000,
+  'Ethiopia': 12000,
+  'Ecuador': 10000,
+  'Bolivia': 10000,
+  'Paraguay': 8000,
+  'Uruguay': 8000,
+  'Guyana': 5000,
+  'Suriname': 5000,
+  'Guatemala': 5000,
+  'Belize': 4500,
+  'Honduras': 5000,
+  'Nicaragua': 5000,
+  'Costa Rica': 0, //no military
+  'Panama': 7500,
+  'El Salvador': 3500,
+  'Cuba': 7500,
+  'Jamaica': 3500,
+  'Haiti': 4000,
+  'Dominican Rep.': 6500,
+  'Puerto Rico': 3000,
+  'Trinidad and Tobago': 2500,
+  'Falkland Is.': 100,
+  'W. Sahara': 1000,
+  'Mauritania': 5000,
+  'Mali': 5000,
+  'Gambia': 2500,
+  'Senegal': 7500,
+  'Guinea-Bissau': 2000,
+  'Guinea': 4500,
+  'Sierra Leone': 3000,
+  'Liberia': 6000,
+  "Côte d'Ivoire": 5000,
+  'Burkina Faso': 3500,
+  'Niger': 5000,
+  'Tunisia': 3500,
+  'Ghana': 7500,
+  'Togo': 2000,
+  'Benin': 3000,
+  'Cameroon': 7000,
+  'Chad': 5000,
+  'Eq. Guinea': 2000,
+  'Gabon': 4500,
+  'Congo': 5000,
+  'Central African Rep.': 3500,
+  'Dem. Rep. Congo': 7000,
+  'Angola': 9000,
+  'Namibia': 8000,
+  'Botswana': 12000,
+  'Zambia': 7000,
+  'Tanzania': 10000,
+  'Zimbabwe': 8000,
+  'Lesotho': 2500,
+  'eSwatini': 1500,
+  'Mozambique': 6500,
+  'Malawi': 4000,
+  'Burundi': 2000,
+  'Rwanda': 3000,
+  'Uganda': 7000,
+  'S. Sudan': 7000,
+  'Kenya': 10000,
+  'Sudan': 8000,
+  'Libya': 7000,
+  'Somalia': 3000,
+  'Somaliland': 5000,
+  'Eritrea': 3500,
+  'Djibouti': 2000,
+  'Madagascar': 5000,
+  'Vanuatu': 1000,
+  'Ireland': 10000,
+  'Portugal': 10000,
+  'Belgium': 8000,
+  'Netherlands': 10000,
+  'Luxembourg': 2000,
+  'Norway': 15000,
+  'Denmark': 10000,
+  'Switzerland': 6000,
+  'Austria': 7000,
+  'Czech Republic': 10000,
+  'Slovakia': 9000,
+  'Hungary': 10000,
+  'Slovenia': 7000,
+  'Croatia': 9000,
+  'Bosnia and Herz.': 7000,
+  'Montenegro': 6000,
+  'Albania': 9000,
+  'Serbia': 12000,
+  'Bulgaria': 10000,
+  'Kosovo': 5000,
+  'Macedonia': 5000,
+  'Moldova': 7250,
+  'N. Cyprus': 2000,
+  'Cyprus': 5000,
+  'Belarus': 8000,
+  'Lithuania': 8000,
+  'Latvia': 7000,
+  'Estonia': 8000,
+  'Finland': 18000,
+  'Iceland': 0,
+  'Greenland': 3500,
+  'Kazakhstan': 10000,
+  'Uzbkistan': 8000,
+  'Kyrgyzstan': 6000,
+  'Tajikistan': 6000,
+  'Turkmenistan': 7000,
+  'Georgia': 8000,
+  'Armenia': 7000,
+  'Azerbaijan': 8000,
+  'North Korea': 10000,
+  'Mongolia': 9000,
+  'Czechia': 9000,
+  'Bahamas': 5000
+}
+
+// Update getArmyPower function to return a smaller default value
+function getArmyPower(countryName) {
+  return countryArmies[countryName] || 2500; // Default reduced to 2.5k for unlisted countries
+}
+
+// Update the d3.json callback to initialize relations after loading:
+d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+  .then(function(world) {
+    countries = topojson.feature(world, world.objects.countries);
+    const countryCount = countries.features.length;
+    politicalColors = generateColors(countryCount);
+
+    // Initialize relations here after countries is loaded
+    countries.features.forEach(country1 => {
+      countryRelations[country1.properties.name] = {};
+      countries.features.forEach(country2 => {
+        if (country1.properties.name !== country2.properties.name) {
+          countryRelations[country1.properties.name][country2.properties.name] = 
+            Math.random() * 2 - 1; // Random value between -1 and 1
+        }
+      });
+    });
+
+    updateMap();
+  });
+
+// Add relations color scale
+const relationsColorScale = d3.scaleLinear()
+  .domain([-1, 0, 1])
+  .range(["#ff4444", "#808080", "#44ff44"]);
+
+// Add selected country tracking
+let selectedCountry = null;
+
+function checkForAllianceApplications() {
+  if (!countries) return; // Add this guard clause
+  
+  countries.features.forEach(country => {
+    const name = country.properties.name;
+    if (countryAlliances[name] || allianceApplications[name]) return;
+
+    // Random chance to apply (adjust probability as needed)
+    if (Math.random() < 0.01) { // 1% chance each second
+      allianceApplications[name] = {
+        alliance: 'SCO',  // Only SCO remains as an option
+        progress: 0,
+        startYear: currentYear
+      };
+    }
+  });
+}
+
+function processAllianceApplications() {
+  Object.entries(allianceApplications).forEach(([country, application]) => {
+    application.progress += Math.random() * 10;
+
+    // If application process complete (progress reaches 100)
+    if (application.progress >= 100) {
+      countryAlliances[country] = application.alliance;
+      delete allianceApplications[country];
+      updateMap();
+    }
+  });
+}
+
+// Add this function after the updateCountryProfile function:
+function closeCountryProfile() {
+  const profile = document.querySelector('.country-profile');
+  profile.style.display = 'none';
+  
+  // Also hide the neighbor list if it's open
+  const neighborList = document.querySelector('.neighbor-list');
+  neighborList.style.display = 'none';
+}
+
+// Add this function after the processAllianceApplications function:
+function strengthenAllianceRelations() {
+  // For each alliance
+  Object.entries(countryAlliances).forEach(([country1, alliance1]) => {
+    // Find other countries in same alliance
+    Object.entries(countryAlliances).forEach(([country2, alliance2]) => {
+      if (country1 !== country2 && alliance1 === alliance2) {
+        // Gradually improve relations between alliance members
+        if (countryRelations[country1] && countryRelations[country1][country2]) {
+          let currentRelation = countryRelations[country1][country2];
+          // Move relation closer to 1.0 by a small random amount
+          countryRelations[country1][country2] = Math.min(1.0, 
+            currentRelation + (Math.random() * 0.05));
+          // Mirror the relation for the other country
+          countryRelations[country2][country1] = countryRelations[country1][country2];
+        }
+      }
+    });
+  });
+}
+
+function generateColors(numColors) {
+  const colors = [];
+  const goldenRatio = 0.618033988749895;
+  let hue = Math.random();
+  
+  for (let i = 0; i < numColors; i++) {
+    hue = (hue + goldenRatio) % 1;
+    const saturation = 0.5 + Math.random() * 0.2;
+    const lightness = 0.4 + Math.random() * 0.2;
+    colors.push(`hsl(${hue * 360}, ${saturation * 100}%, ${lightness * 100}%)`);
+  }
+  
+  return colors;
+}
+
+let isAllianceView = false;
+let currentView = 'political'; // can be 'political' or 'relations'
+let politicalColors;
+
+function getRelationEmoji(relationValue) {
+  if (relationValue >= 0.8) return '❤️'; // Love
+  if (relationValue >= 0.5) return '😊'; // Very friendly
+  if (relationValue >= 0.2) return '🙂'; // Friendly
+  if (relationValue >= -0.2) return '😐'; // Neutral
+  if (relationValue >= -0.5) return '🙁'; // Unfriendly
+  if (relationValue >= -0.8) return '😠'; // Very unfriendly
+  return '😡'; // Hostile
+}
+
+function generateLeaderQuote(relationValue) {
+  if (relationValue >= 0.8) {
+    const quotes = [
+      "We consider them our closest allies and friends. Our partnership is unbreakable.",
+      "Our nations share an extraordinary bond of trust and mutual respect.",
+      "Together we stand as pillars of global stability and prosperity.",
+      "Our alliance represents the strongest partnership in modern diplomacy."
+    ];
+    return quotes[Math.floor(Math.random() * quotes.length)];
+  } else if (relationValue >= 0.5) {
+    const quotes = [
+      "We have excellent relations and look forward to continued cooperation.",
+      "Our diplomatic and economic ties grow stronger with each passing day.",
+      "They have proven themselves to be valuable partners in regional affairs.",
+      "We share many common values and strategic objectives."
+    ];
+    return quotes[Math.floor(Math.random() * quotes.length)];
+  } else if (relationValue >= 0.2) {
+    const quotes = [
+      "They are a reliable partner and we maintain good diplomatic ties.",
+      "Our relationship continues to develop in a positive direction.",
+      "We see great potential in expanding our cooperation.",
+      "While we have our differences, we maintain productive dialogue."
+    ];
+    return quotes[Math.floor(Math.random() * quotes.length)];
+  } else if (relationValue >= -0.2) {
+    const quotes = [
+      "We maintain normal diplomatic relations, though there is room for improvement.",
+      "Our relationship is professional, but reserved.",
+      "We approach this relationship with cautious optimism.",
+      "There are both opportunities and challenges in our diplomatic exchange."
+    ];
+    return quotes[Math.floor(Math.random() * quotes.length)];
+  } else if (relationValue >= -0.5) {
+    const quotes = [
+      "There are several concerns we need to address in our relationship.",
+      "Recent developments have strained our diplomatic ties.",
+      "We expect more constructive behavior from their leadership.",
+      "Significant differences remain in our positions on key issues."
+    ];
+    return quotes[Math.floor(Math.random() * quotes.length)];
+  } else if (relationValue >= -0.8) {
+    const quotes = [
+      "We have serious disagreements with their policies and actions.",
+      "Their recent behavior is incompatible with international norms.",
+      "We strongly condemn their provocative stance.",
+      "Their actions continue to undermine regional stability."
+    ];
+    return quotes[Math.floor(Math.random() * quotes.length)];
+  } else {
+    const quotes = [
+      "We consider their actions hostile and a threat to regional stability.",
+      "Their aggressive behavior will not go unanswered.",
+      "We categorically reject their hostile policies.",
+      "Their actions represent a clear and present danger to peace."
+    ];
+    return quotes[Math.floor(Math.random() * quotes.length)];
+  }
+}
+
+// Modify the updateRelationsPanel function to add the flag
+function updateRelationsPanel() {
+  const panel = document.querySelector('.relations-panel');
+  
+  if (!selectedCountry || currentView !== 'relations') {
+    panel.style.display = 'none';
+    return;
+  }
+  
+  // Add quote tooltip div if it doesn't exist
+  if (!document.querySelector('.leader-quote')) {
+    const quoteDiv = document.createElement('div');
+    quoteDiv.className = 'leader-quote';
+    document.body.appendChild(quoteDiv);
+  }
+  
+  const quoteTooltip = document.querySelector('.leader-quote');
+  
+  panel.style.display = 'block';
+  
+  // Update the panel title to include flag
+  panel.querySelector('h2').innerHTML = `
+    <img src="https://flagcdn.com/w20/${getCountryCode(selectedCountry).toLowerCase()}.png" 
+         alt="${selectedCountry} flag" 
+         style="vertical-align: middle; margin-right: 10px;">
+    Relations
+  `;
+  
+  const relations = Object.entries(countryRelations[selectedCountry] || {})
+    .map(([country, value]) => ({country, value}));
+  
+  const sortedRelations = relations.sort((a, b) => b.value - a.value);
+  const topRelations = sortedRelations.slice(0, 5);
+  const bottomRelations = sortedRelations.slice(-5).reverse();
+  
+  function createRelationsList(relations, elementId) {
+    document.getElementById(elementId).innerHTML = `
+      <h3>${elementId === 'top-relations' ? 'Top' : 'Bottom'} Relations</h3>
+      ${relations.map(r => `
+        <div class="relation-item" 
+             data-relation="${r.value}"
+             data-country="${r.country}"
+             onmouseover="showLeaderQuote(event, '${r.country.replace(/'/g, "\\'")}', ${r.value})"
+             onmouseout="hideLeaderQuote()">
+          <span class="country-name">${r.country}</span>
+          <span class="relation-value">
+            ${(r.value * 100).toFixed(0)}% ${getRelationEmoji(r.value)}
+          </span>
+        </div>
+      `).join('')}
+    `;
+  }
+  
+  createRelationsList(topRelations, 'top-relations');
+  createRelationsList(bottomRelations, 'bottom-relations');
+}
+
+// Add these functions to handle the quote tooltip
+function showLeaderQuote(event, country, relationValue) {
+  const quoteTooltip = document.querySelector('.leader-quote');
+  const quote = generateLeaderQuote(relationValue);
+  
+  quoteTooltip.textContent = quote;
+  quoteTooltip.style.opacity = '1';
+  quoteTooltip.style.left = (event.pageX + 15) + 'px';
+  quoteTooltip.style.top = (event.pageY - 15) + 'px';
+}
+
+function hideLeaderQuote() {
+  const quoteTooltip = document.querySelector('.leader-quote');
+  quoteTooltip.style.opacity = '0';
+}
+
+function updateMap() {
+  svg.selectAll("path")
+    .data(countries.features)
+    .join("path")
+    .attr("d", path)
+    .attr("class", "country")
+    .style("fill", (d, i) => {
+      const countryName = d.properties.name;
+      const conqueror = conqueredTerritories[countryName];
+      
+      if (conqueror) {
+        // Get independence movement state if any
+        const movement = independenceMovements[countryName];
+        
+        // Special empire colors
+        const empireColors = {
+          'Soviet Union': '#d41818', // Red
+          'African Union': '#00cc00', // Green
+          'BRICS Alliance': '#bd0628', // Orange
+          'British Empire': '#ff9999', // Light red
+          'French Empire': '#0066ff', // Blue
+          'Arab League': '#98fb98', // Pale green
+          'Qing Dynasty': '#ece752',
+          'Ottoman Empire': '#b11212',// Yellow
+          'Russian Empire': '#d1d417' // Orange
+        };
+
+        if (currentView === 'relations') {
+          if (!selectedCountry) return '#808080';
+          if (conqueror === selectedCountry) return '#0088ff';
+          color = relationsColorScale(countryRelations[selectedCountry][conqueror] || 0);
+        } else {
+          // Use empire colors if available
+          if (empireColors[conqueror]) {
+            color = empireColors[conqueror];
+          } else {
+            const conquerorIndex = countries.features.findIndex(
+              f => f.properties.name === conqueror
+            );
+            color = politicalColors[conquerorIndex];
+          }
+        }
+
+        // Lighten color based on autonomy status
+        if (movement && movement.state === INDEPENDENCE_STATES.AUTONOMOUS) {
+          return d3.color(color).brighter(0.5);
+        }
+        return color;
+      }
+      
+      switch(currentView) {
+        case 'relations':
+          if (!selectedCountry) return '#808080';
+          if (countryName === selectedCountry) return '#0088ff';
+          return relationsColorScale(countryRelations[selectedCountry][countryName] || 0);
+        
+        default: // political
+          return politicalColors[i];
+      }
+    })
+    .on("click", function(event, d) {
+      if (currentView === 'relations') {
+        // If clicking a conquered territory, select its conqueror instead
+        const clickedCountry = d.properties.name;
+        const controller = conqueredTerritories[clickedCountry] || clickedCountry;
+        selectedCountry = selectedCountry === controller ? null : controller;
+        updateMap();
+      } else if (currentView === 'political') {
+        const displayCountry = conqueredTerritories[d.properties.name] || d.properties.name;
+        updateCountryProfile(displayCountry);
+      }
+    })
+    .style("stroke", "none")
+    .style("stroke-width", "0")
+    .on("mouseover", function(event, d) {
+      // Highlight the hovered country
+      d3.select(this)
+        .transition()
+        .duration(200);
+        
+      // Get the actual controller of the hovered country
+      const hoveredCountry = d.properties.name;
+      const controller = conqueredTerritories[hoveredCountry] || hoveredCountry;
+        
+      // Highlight all territories controlled by this controller
+      svg.selectAll("path")
+        .style("filter", path => {
+          const countryName = path.properties.name;
+          
+          if (countryName === controller || 
+              conqueredTerritories[countryName] === controller) {
+            return "brightness(1.5)";
+          }
+          return "none";
+        });
+
+      // Create tooltip content with flag and name
+      let tooltipContent = `
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <img src="https://flagcdn.com/w20/${getCountryCode(controller).toLowerCase()}.png" 
+               alt="${controller} flag" 
+               style="width: 20px; height: auto;">
+          <span style="font-size: 16px;">${controller}</span>
+        </div>
+      `;
+
+      // Add original territory name if it's conquered
+      if (conqueredTerritories[hoveredCountry]) {
+        tooltipContent += `
+          <div style="font-size: 12px; color: #aaa; margin-top: 4px; margin-left: 28px;">
+            Core: ${hoveredCountry}
+          </div>
+        `;
+      }
+
+      // Add independence movement status if applicable
+      if (conqueredTerritories[hoveredCountry]) {
+        const movement = independenceMovements[hoveredCountry];
+        if (movement) {
+          let statusText = '';
+          switch(movement.state) {
+            case INDEPENDENCE_STATES.PROTESTS:
+              statusText = "⚠️ Active Independence Protests";
+              break;
+            case INDEPENDENCE_STATES.AUTONOMOUS:
+              statusText = "🏛️ Autonomous Region";
+              break;
+          }
+          if (statusText) {
+            tooltipContent += `
+              <div style="font-size: 12px; color: #ff9999; margin-top: 4px; margin-left: 28px;">
+                ${statusText}
+              </div>
+            `;
+          }
+        }
+      }
+
+      // Update tooltip styles to accommodate HTML content
+      tooltip
+        .style("opacity", 1)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 10) + "px")
+        .html(tooltipContent); // Use .html() instead of .text()
+    })
+    .on("mouseout", function() {
+      // Reset all highlights when mouse leaves
+      svg.selectAll("path")
+        .style("filter", "none");
+        
+      tooltip.style("opacity", 0);
+    });
+  
+  // Update the army dots
+  // Removed army dots update for the new plan
+  
+  // Add this at the end: to update the relations panel
+  updateRelationsPanel();
+}
+
+const zoom = d3.zoom()
+  .scaleExtent([1, 8])
+  .on("zoom", function(event) {
+    svg.selectAll("path")
+      .attr("transform", event.transform);
+    // Removed the dots group transform line
+  });
+
+svg.call(zoom);
+
+// Initialize category list when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+  updateCategoryList();
+});
+
+// Function to toggle the map view
+function toggleMap() {
+  // Rotate through only political and relations views
+  switch(currentView) {
+    case 'political':
+      currentView = 'relations';
+      selectedCountry = null;
+      break;
+    case 'relations':
+      currentView = 'political';
+      selectedCountry = null;
+      break;
+    default:
+      currentView = 'political';
+  }
+  
+  // Update button classes
+  const button = document.querySelector('.map-toggle');
+  button.classList.remove('political-view', 'alliance-view', 'relations-view');
+  button.classList.add(`${currentView}-view`);
+  
+  updateMap();
+}
+
+// Function to get sorted countries for the selected category
+function getSortedCountries(category) {
+  switch(category) {
+    case 'military':
+      // Use countryArmies instead of countryData.military
+      return Object.entries(countryArmies)
+        .filter(([country]) => !conqueredTerritories[country]) // Exclude conquered countries
+        .sort((a, b) => b[1] - a[1])
+        .map(([country, value]) => ({
+          country,
+          value: formatValue(value, category)
+        }));
+    default:
+      const data = countryData[category];
+      return Object.entries(data)
+        .filter(([country]) => !conqueredTerritories[country]) // Exclude conquered countries
+        .sort((a, b) => b[1] - a[1])
+        .map(([country, value]) => ({
+          country,
+          value: formatValue(value, category)
+        }));
+  }
+}
+
+function formatValue(value, category) {
+  switch(category) {
+    case 'military':
+      // Display military power in thousands (k) for better readability
+      return value >= 100000 ? 
+        `${(value/1000).toLocaleString()}k troops` : 
+        `${value.toLocaleString()} troops`;
+    case 'economy':
+      return `$${value}B`;
+    case 'land':
+      return `${(value/1000000).toFixed(2)}M km²`;
+    default:
+      return value;
+  }
+}
+
+function updateCategoryList() {
+  const category = document.querySelector('.category-selector').value;
+  const countryList = document.querySelector('.country-list');
+  const sortedCountries = getSortedCountries(category);
+  
+  countryList.innerHTML = sortedCountries
+    .map(({country, value}, index) => `
+      <div class="country-item">
+        <div class="country-name">
+          <span class="rank-number">${index + 1}..</span>
+          <img src="https://flagcdn.com/w20/${getCountryCode(country).toLowerCase()}.png" 
+               alt="${country} flag" 
+               style="width: 20px; height: auto; margin-right: 8px; vertical-align: middle;">
+          ${country}
+        </div>
+        <span class="country-value">${value}</span>
+      </div>
+    `)
+    .join('');
+}
+
+function toggleCategoryPanel() {
+  const panel = document.querySelector('.category-panel');
+  const isHidden = panel.style.display === 'none';
+  panel.style.display = isHidden ? 'block' : 'none';
+  if (isHidden) {
+    updateCategoryList();
+  }
+}
+
+// Add the updateCountryProfile function
+function updateCountryProfile(countryName) {
+  const profile = document.querySelector('.country-profile');
+  
+  // Get country relations sorted by value to find top allies
+  const relations = Object.entries(countryRelations[countryName] || {})
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
+    
+  // Update profile content
+  profile.querySelector('.country-name').textContent = countryName;
+  profile.querySelector('.country-flag').src = 
+    `https://flagcdn.com/w80/${getCountryCode(countryName).toLowerCase()}.png`;
+  profile.querySelector('.country-flag').alt = `${countryName} flag`;
+  
+  profile.querySelector('.military-value').textContent = 
+    `${(countryArmies[countryName] || 0).toLocaleString()} troops`;
+    
+  profile.querySelector('.economy-value').textContent = 
+    countryData.economy[countryName] ? 
+    `$${countryData.economy[countryName]}B` : 
+    'Data unavailable';
+    
+  profile.querySelector('.allies-list').innerHTML = relations
+    .map(([country, value]) => `
+      <div class="ally-item">
+        <img src="https://flagcdn.com/w20/${getCountryCode(country).toLowerCase()}.png"
+             alt="${country} flag" width="20">
+        ${country}
+      </div>
+    `)
+    .join('');
+  
+  // Reset force war interface
+  document.querySelector('.neighbor-list').style.display = 'none';
+  
+  profile.style.display = 'block';
+}
+
+// Helper function to convert country names to ISO codes for flags
+function getCountryCode(countryName) {
+  // Add empire flag mappings
+  const empireFlags = {
+    'Russia': 'RU',  // Historical Soviet Union flag code
+    'Russia': 'RU',
+    'United Kingdom': 'GB',
+    'France': 'FR',
+    'China': 'CN',
+    'China': 'CN',
+    'Turkey': 'TR',
+    'Saudi Arabia': 'SA',
+    'South Africa': 'ZA',
+  };
+
+  // Check for empire flags first
+  if (empireFlags[countryName]) {
+    return empireFlags[countryName];
+  }
+
+  // Existing country code mappings...
+  const countryCodeMap = {
+    // Existing entries...
+    
+    // Add Indonesia's code
+    'Indonesia': 'ID',
+    
+    // Rest of the entries...
+    'Canada': 'CA',
+    'United States of America': 'US',  // Already exists but including for completeness
+    'Mexico': 'MX',
+    'Guatemala': 'GT',
+    'Belize': 'BZ',
+    'New Caledonia': 'NC',
+    'Fiji': 'FJ',
+    'Vanuatu': 'VU',
+    'Fr. S. Antarctic Lands': 'TF',
+    'Honduras': 'HN',
+    'El Salvador': 'SV',
+    'Nicaragua': 'NI',
+    'Costa Rica': 'CR',
+    'Panama': 'PA',
+    'Bahamas': 'BS',
+    'Cuba': 'CU',
+    'Jamaica': 'JM',
+    'Haiti': 'HT',
+    'Dominican Rep.': 'DO',
+    'Saint Kitts and Nevis': 'KN',
+    'Antigua and Barbuda': 'AG',
+    'Dominica': 'DM',
+    'Saint Lucia': 'LC',
+    'Saint Vincent and the Grenadines': 'VC',
+    'Barbados': 'BB',
+    'Grenada': 'GD',
+    'Puerto Rico': 'PR',
+    'Trinidad and Tobago': 'TT',
+
+    // Existing codes
+    'United Kingdom': 'GB',
+    'Russia': 'RU',
+    'China': 'CN', // Already exists but including for completeness
+    'Brazil': 'BR',
+    'Argentina': 'AR',
+    'Colombia': 'CO',
+    'Venezuela': 'VE',
+    'Peru': 'PE',
+    'Bolivia': 'BO',
+    'Chile': 'CL',
+    'Ecuador': 'EC',
+    'Paraguay': 'PY',
+    'Uruguay': 'UY',
+    'Guyana': 'GY',
+    'Suriname': 'SR',
+    'Albania': 'AL',
+    'Antarctica': 'AQ',
+    'Andorra': 'AD',
+    'Austria': 'AT',
+    'Australia': 'AU',
+    'Belarus': 'BY',
+    'Belgium': 'BE',
+    'Bosnia and Herz.': 'BA',
+    'Bulgaria': 'BG',
+    'Croatia': 'HR',
+    'Cyprus': 'CY',
+    'Czech Republic': 'CZ',
+    'Czechia': 'CZ',
+    'Denmark': 'DK',
+    'Estonia': 'EE',
+    'Finland': 'FI',
+    'France': 'FR',
+    'Germany': 'DE',
+    'Greece': 'GR',
+    'Greenland': 'GL',
+    'Hungary': 'HU',
+    'Iceland': 'IS',
+    'Ireland': 'IE',
+    'Italy': 'IT',
+    'Kosovo': 'XK',
+    'Latvia': 'LV',
+    'Liechtenstein': 'LI',
+    'Lithuania': 'LT',
+    'Luxembourg': 'LU',
+    'Malta': 'MT',
+    'Moldova': 'MD',
+    'Monaco': 'MC',
+    'Montenegro': 'ME',
+    'Netherlands': 'NL',
+    'Macedonia': 'MK',
+    'Norway': 'NO',
+    'New Zealand': 'NZ',
+    'Poland': 'PL',
+    'Portugal': 'PT',
+    'Papua New Guinea': 'PG',
+    'Romania': 'RO',
+    'San Marino': 'SM',
+    'Serbia': 'RS',
+    'Slovakia': 'SK',
+    'Slovenia': 'SI',
+    'Solomon Is.': 'SB',
+    'Spain': 'ES',
+    'Sweden': 'SE',
+    'Switzerland': 'CH',
+    'Ukraine': 'UA',
+
+    // African countries
+    'Algeria': 'DZ',
+    'Angola': 'AO',
+    'Benin': 'BJ',
+    'Botswana': 'BW',
+    'Burkina Faso': 'BF',
+    'Burundi': 'BI',
+    'Cameroon': 'CM',
+    'Cape Verde': 'CV',
+    'Central African Rep.': 'CF', // Code for Central African Republic
+    'Chad': 'TD',
+    'Comoros': 'KM',
+    'Congo': 'CG',
+    'Dem. Rep. Congo': 'CD',
+    'Djibouti': 'DJ',
+    'Egypt': 'EG',
+    'Eq. Guinea': 'GQ',
+    'Eritrea': 'ER',
+    'eSwatini': 'SZ',
+    'Ethiopia': 'ET',
+    'Gabon': 'GA',
+    'Gambia': 'GM',
+    'Ghana': 'GH',
+    'Guinea': 'GN',
+    'Guinea-Bissau': 'GW',
+    "Côte d'Ivoire": 'CI',
+    'Kenya': 'KE',
+    'Lesotho': 'LS',
+    'Liberia': 'LR',
+    'Libya': 'LY',
+    'Madagascar': 'MG',
+    'Malawi': 'MW',
+    'Mali': 'ML',
+    'Mauritania': 'MR',
+    'Mauritius': 'MU',
+    'Morocco': 'MA',
+    'Mozambique': 'MZ',
+    'Namibia': 'NA',
+    'Niger': 'NE',
+    'Nigeria': 'NG',
+    'Rwanda': 'RW',
+    'São Tomé and Príncipe': 'ST',
+    'Senegal': 'SN',
+    'Seychelles': 'SC',
+    'Sierra Leone': 'SL',
+    'Somalia': 'SO',
+    'South Africa': 'ZA',
+    'S. Sudan': 'SS',  // Code for South Sudan
+    'Sudan': 'SD',
+    'Tanzania': 'TZ',
+    'Togo': 'TG',
+    'Tunisia': 'TN',
+    'Uganda': 'UG',
+    'W. Sahara': 'EH',
+    'Zambia': 'ZM',
+    'Zimbabwe': 'ZW',
+
+    // East Asia
+    'Japan': 'JP',
+    'Mongolia': 'MN',
+    'North Korea': 'KP',
+    'South Korea': 'KR',
+    'Taiwan': 'TW',
+
+    // Southeast Asia
+    'Brunei': 'BN',
+    'Cambodia': 'KH',
+    'East Timor': 'TL',
+    'Laos': 'LA',
+    'Malaysia': 'MY',
+    'Myanmar': 'MM',
+    'Philippines': 'PH',
+    'Singapore': 'SG',
+    'Thailand': 'TH',
+    'Vietnam': 'VN',
+
+    // South Asia
+    'Afghanistan': 'AF',
+    'Bangladesh': 'BD',
+    'Bhutan': 'BT',
+    'India': 'IN',
+    'Maldives': 'MV',
+    'Nepal': 'NP',
+    'Pakistan': 'PK',
+    'Sri Lanka': 'LK',
+
+    // Central Asia
+    'Kazakhstan': 'KZ',
+    'Uzbkistan': 'UZ',
+    'Kyrgyzstan': 'KG',
+    'Tajikistan': 'TJ',
+    'Turkmenistan': 'TM',
+    'Georgia': 'GE',
+    'Armenia': 'AM',
+    'Azerbaijan': 'AZ',
+    'North Korea': 'KP',
+    'Mongolia': 'MN',
+
+    // Western Asia (Middle East)
+    'Armenia': 'AM',
+    'Azerbaijan': 'AZ',
+    'Bahrain': 'BH',
+    'Georgia': 'GE',
+    'Iran': 'IR',
+    'Iraq': 'IQ',
+    'Israel': 'IL',
+    'Jordan': 'JO',
+    'Kuwait': 'KW',
+    'Lebanon': 'LB',
+    'Oman': 'OM',
+    'Palestine': 'PS',
+    'Qatar': 'QA',
+    'Saudi Arabia': 'SA',
+    'Syria': 'SY',
+    'Turkey': 'TR',
+    'United Arab Emirates': 'AE',
+    'Yemen': 'YE',
+    
+    // Additions based on the plan
+    'Somaliland': 'SO', // Using Somalia's code as Somaliland isn't internationally recognized
+    'N. Cyprus': 'CY', // Using Cyprus's code as N.Cyprus isn't internationally recognized
+    'Falkland Is.': 'FK',
+  };
+  return countryCodeMap[countryName] || 'UN'; // UN flag as fallback
+}
+
+function toggleNeighborList() {
+  const selectedCountry = document.querySelector('.country-profile .country-name').textContent;
+  const neighborList = document.querySelector('.neighbor-list');
+  
+  if (neighborList.style.display === 'none' || !neighborList.style.display) {
+    // Get all neighbors
+    const neighbors = getNeighboringCountries(selectedCountry);
+    
+    // Create neighbor list HTML
+    neighborList.innerHTML = neighbors
+      .map(neighbor => {
+        const relation = countryRelations[selectedCountry][neighbor] || 0;
+        const emoji = getRelationEmoji(relation);
+        return `
+          <div class="neighbor-option" onclick="initiateWar('${selectedCountry}', '${neighbor}')">
+            <span class="neighbor-name">${neighbor}</span>
+            <span class="neighbor-relation">
+              ${(relation * 100).toFixed(0)}% ${emoji}
+            </span>
+          </div>
+        `;
+      })
+      .join('');
+    
+    neighborList.style.display = 'block';
+  } else {
+    neighborList.style.display = 'none';
+  }
+}
+
+function getNeighboringCountries(countryName) {
+  if (!countries || !countries.features) return [];
+  
+  // Get all territories controlled by this country
+  const controlledTerritories = [countryName, 
+    ...Object.entries(conqueredTerritories)
+      .filter(([_, conqueror]) => conqueror === countryName)
+      .map(([territory]) => territory)
+  ];
+  
+  // Get unique neighbors of all controlled territories
+  const neighbors = new Set();
+  
+  controlledTerritories.forEach(territory => {
+    const country = countries.features.find(f => f.properties.name === territory);
+    if (!country) return;
+    
+    countries.features.forEach(f => {
+      const neighborName = f.properties.name;
+      if (!controlledTerritories.includes(neighborName) && // Not already controlled
+          !conqueredTerritories[neighborName] && // Not conquered by someone else
+          neighborName !== countryName && // Not self
+          areNeighbors(territory, neighborName)) {
+        neighbors.add(neighborName);
+      }
+    });
+  });
+  
+  return Array.from(neighbors);
+}
+
+function initiateWar(attacker, defender) {
+  // Hide the neighbor list
+  document.querySelector('.neighbor-list').style.display = 'none';
+  
+  // Simulate the battle
+  const result = simulateBattle(attacker, defender);
+  
+  // Update map and lists
+  if (result) {
+    updateMap();
+    updateCategoryList();
+    
+    // Refresh the neighbor list to show new neighbors after conquest
+    // Only if the profile panel is still open and showing the attacker
+    const profile = document.querySelector('.country-profile');
+    const displayedCountry = profile.querySelector('.country-name').textContent;
+    if (profile.style.display !== 'none' && displayedCountry === attacker) {
+      toggleNeighborList(); // Hide current list
+      toggleNeighborList(); // Show updated list
+    }
+  }
+}
+
+// Toggle commands panel visibility
+function toggleCommands() {
+  const panel = document.querySelector('.commands-panel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  
+  // Hide empire options when closing panel
+  if (panel.style.display === 'none') {
+    document.querySelector('.empire-options').style.display = 'none';
+  }
+}
+
+// Toggle empire options visibility
+function toggleEmpireOptions() {
+  const options = document.querySelector('.empire-options');
+  options.style.display = options.style.display === 'none' ? 'block' : 'none';
+}
+
+// Function to trigger complete collapse when a nation is clicked
+function initiateCompleteCollapse() {
+  // Add visual feedback that collapse mode is active
+  svg.style.cursor = 'crosshair';
+  
+  // Add one-time click handler to the map
+  const clickHandler = function(event, d) {
+    const countryName = d.properties.name;
+    
+    // Find all territories controlled by this country
+    const territoriesControlled = Object.entries(conqueredTerritories)
+      .filter(([_, conqueror]) => conqueror === countryName)
+      .map(([territory]) => territory);
+    
+    // Release all territories and transfer troops
+    territoriesControlled.forEach(territory => {
+      // Get the original military value or default to 5000
+      const troopsToTransfer = countryData.military[territory] || 5000;
+      
+      // Remove troops from conqueror
+      if (countryArmies[countryName]) {
+        countryArmies[countryName] = Math.max(0, countryArmies[countryName] - troopsToTransfer);
+      }
+      
+      // Give troops to newly independent nation
+      countryArmies[territory] = troopsToTransfer;
+      
+      // Show collapse alert
+      showBattleAlert(`🎊 ${territory} has broken free with ${troopsToTransfer.toLocaleString()} troops!`, {
+        attacker: territory,
+        defender: countryName
+      });
+      
+      // Remove from conquered territories and related data
+      delete conqueredTerritories[territory];
+      delete occupationStartYears[territory];
+      delete independenceMovements[territory];
+    });
+    
+    // Update display
+    updateMap();
+    updateCategoryList();
+    
+    // Reset cursor and remove click handler
+    svg.style.cursor = 'default';
+    svg.selectAll("path").on("click", null);
+    
+    // Restore original click handlers
+    updateMap();
+  };
+  
+  // Apply the temporary click handler
+  svg.selectAll("path")
+    .on("click", clickHandler);
+}
+
+// Function to reset the map to original state
+function resetMap() {
+  // Clear all conquests and related data
+  Object.keys(conqueredTerritories).forEach(country => {
+    delete conqueredTerritories[country];
+    delete occupationStartYears[country];
+    delete independenceMovements[country];
+  });
+  
+  // Reset year to 2020
+  currentYear = 2025;
+  
+  // Reset country armies to original values
+  Object.keys(countryArmies).forEach(country => {
+    countryArmies[country] = countryData.military[country] || 5000;
+  });
+  
+  // Update display
+  updateMap();
+  updateCategoryList();
+  
+  // Hide any open panels
+  document.querySelector('.commands-panel').style.display = 'none';
+}
+
+// Function to trigger a random war between neighbors
+function triggerRandomWar() {
+  const availableCountries = countries.features
+    .map(f => f.properties.name)
+    .filter(name => !conqueredTerritories[name]);
+    
+  if (availableCountries.length < 2) return;
+  
+  // Pick a random country
+  const attacker = availableCountries[Math.floor(Math.random() * availableCountries.length)];
+  
+  // Get its neighbors
+  const neighbors = getNeighboringCountries(attacker);
+  
+  if (neighbors.length > 0) {
+    // Pick a random neighbor
+    const defender = neighbors[Math.floor(Math.random() * neighbors.length)];
+    
+    // Start the war
+    simulateBattle(attacker, defender);
+    updateMap();
+  }
+}
+
+// Function to form empires
+function formEmpire(empireName) {
+  let coreNation;
+  let territoriesToConquer = [];
+  
+  switch(empireName) {
+    case 'Arab League':
+      coreNation = 'Saudi Arabia';
+      territoriesToConquer = [
+        'Egypt', 'Iraq', 'Syria', 'Yemen', 'Oman', 'UAE', 'Kuwait', 
+        'Qatar', 'Bahrain', 'Lebanon', 'Jordan', 'Libya', 'Algeria', 
+        'Tunisia', 'Morocco', 'Sudan', 'United Arab Emirates'
+      ];
+      break;
+     case 'First Bulgarian Empire':
+      coreNation = 'Bulgaria';
+      territoriesToConquer = [
+        'Romania', 'Serbia', 'Macedonia', 'Kosovo'
+      ];
+      break;
+    case 'East African Federation': coreNation = 'Tanzania';
+      territoriesToConquer = [
+        'Kenya',
+ 'Rwanda',
+ 'Burundi',
+ 'Uganda',
+ 'Dem. Rep. Congo',
+ 'S. Sudan'
+     ];
+      break;
+    case 'Finnic Union':
+      coreNation = 'Finland';
+      territoriesToConquer =
+        [
+          'Estonia'
+        ];
+      break;
+      case 'Patria Grandé':
+      coreNation = 'Argentina';
+      territoriesToConquer = [
+        'Chile', 'Uruguay', 'Bolivia', 'Peru', 'Ecuador', 'Colombia', 'Venezuela', 'Panama', 'Costa Rica', 'Nicaragua', 'Honduras', 'El Salvador', 'Guatemala', 'Belize', 'Mexico', 'Paraguay', 'Cuba', 'Dominican Rep.', 'Puerto Rico'
+      ];
+      break;
+    case 'Kushan Empire':
+      coreNation = 'Afghanistan';
+territoriesToConquer =
+  [
+    'Uzbekistan', 'Turkmenistan', 'Tajikistan', 'Kyrgyzstan',
+    'Pakistan', 'India'
+  ];
+  break;
+      case 'Belgian Empire':
+      coreNation = 'Belgium';
+      territoriesToConquer = [
+        'Dem. Rep. Congo', 'Rwanda', 'Burundi'
+      ];
+      break;
+    case 'Soviet Union':
+      coreNation = 'Russia';
+      territoriesToConquer = [
+        'Ukraine', 'Belarus', 'Kazakhstan', 'Georgia', 'Azerbaijan', 
+        'Armenia', 'Moldova', 'Latvia', 'Lithuania', 'Estonia',
+        'Uzbekistan', 'Kyrgyzstan', 'Tajikistan', 'Turkmenistan'
+      ];
+      break;
+    case 'Russian Empire':
+      coreNation = 'Russia';
+      territoriesToConquer = [
+        'Finland', 'Poland', 'Ukraine', 'Belarus', 'Kazakhstan', 
+        'Georgia', 'Azerbaijan', 'Estonia', 'Latvia','Armenia', 'Uzbekistan', 'Lithuania',
+        'Kyrgyzstan', 'Tajikistan', 'Turkmenistan', 'Moldova',
+      ];
+      break;
+  case 'Dutch Empire (17th Century)':
+      coreNation = 'Netherlands';
+      territoriesToConquer = [
+        'Suriname', 'South Africa ', 'Belgium', 'Luxembourg', 'Indonesia', 'Sri Lanka', 'Taiwan'
+      ];
+      break;
+    case 'British Empire':
+      coreNation = 'United Kingdom';
+      territoriesToConquer = [
+        'Canada', 'Australia', 'India', 'South Africa', 'Nigeria', 'Kenya',
+        'Sudan', 'S. Sudan', 'Uganda', 'Tanzania', 'Ghana', 'Sierra Leone',
+        'Gambia', 'Lesotho', 'eSwatini', 'Malawi', 'Namibia', 'Botswana', 'Papua New Guinea',
+        'Zambia', 'Zimbabwe', 'Egypt', 'S. Sudan',
+        'Israel', 'Palestine', 'Pakistan', 'Bangladesh', 'Myanmar', 'Sri Lanka',
+        'Nepal', 'Bhutan', 'Iraq', 'Jordan', 'Oman', 'Yemen', 'United Arab Emirates',
+        'Malaysia', 'Fiji', 'Brunei', 'New Zealand',
+        'Guyana', 'Somaliland', 'Jamaica', 'Bahamas', 'Belize', 'Falkland Is.',
+        'Cyprus', 'Ireland', 'Kuwait', 'Qatar', 'Trinidad and Tobago'
+      ];
+      break;
+    case 'French Empire':
+      coreNation = 'France';
+      territoriesToConquer = [
+        'Algeria', 'Morocco', 'Tunisia', 'Madagascar', 'Senegal', 'Mali',
+        'Mauritania', 'Niger', 'Burkina Faso', 'Chad', 'Guinea', 
+        "Côte d'Ivoire", 'Benin', 'Congo', 'Gabon', 'Central African Rep.', 'Djibouti', 'Cameroon',
+        'Vietnam', 'Laos', 'Cambodia', 'Lebanon', 'Syria'
+      ];
+      break;
+    case 'Achaemenid Empire (500BC)':
+      coreNation = 'Iran';
+      territoriesToConquer = [
+        'Turkey', 'Georgia', 'Armenia', 'Azerbaijan', 'Turkmenistan', 'Afghanistan',
+        'Pakistan', 'Iraq', 'Syria', 'Lebanon', 'Jordan', 
+        "Israel", 'Palestine', 'United Arab Emirates', 'Egypt', 'Oman', 'Kuwait', 'Uzbekistan', 'Kyrgyzstan', 'Tajikistan', 'Egypt', 'Qatar'
+      ];
+      break;
+    case 'Qing Dynasty':
+      coreNation = 'China';
+      territoriesToConquer = [
+        'Taiwan',
+        'Mongolia'
+      ];
+      break;
+    case 'BRICS':
+      coreNation = 'China';
+      territoriesToConquer = [
+        'Brazil',
+        'Russia', 
+        'India',
+        'South Africa'
+      ];
+      break;
+     case 'North Sea Empire':
+      coreNation = 'Denmark';
+      territoriesToConquer = [
+        'United Kingdom',
+        'Norway'
+      ];
+      break;
+      case 'Italian Empire':
+      coreNation = 'Italy';
+      territoriesToConquer = [
+        'Albania',
+        'Libya',
+        'Somalia',
+        'Eritrea',
+        'Ethiopia'
+      ];
+      break;
+     case 'Benelux':
+      coreNation = 'Netherlands';
+      territoriesToConquer = [
+        'Belgium',
+        'Luxembourg'
+      ];
+      break;
+      case 'Carribbean Empire':
+      coreNation = 'Bahamas';
+      territoriesToConquer = [
+        'Cuba',
+        'Haiti',
+        'Dominican Rep.',
+        'Jamaica',
+        'Puerto Rico',
+        'Trinidad and Tobago'
+        ];
+        break;
+      case 'Yugoslavia':
+      coreNation = 'Serbia';
+      territoriesToConquer = [
+        'Kosovo',
+        'Montenegro', 
+        'Macedonia',
+        'Croatia',
+        'Bosnia and Herz.',
+        'Slovenia'
+      ];
+      break;
+        case 'Spanish Empire (1714)':
+      coreNation = 'Spain';
+      territoriesToConquer = [
+        'Philippines',
+        'Argentina', 
+        'Chile',
+        'Uruguay',
+        'Paraguay',
+        'Bolivia',
+        'Peru',
+        'Ecuador',
+        'Colombia',
+        'Venezuela',
+        'Trinidad and Tobago',
+        'Panama',
+        'Costa Rica',
+        'Nicaragua',
+        'El Salvador',
+        'Honduras',
+        'Guatemala',
+        'Belize',
+        'Mexico',
+        'Cuba',
+        'Dominican Rep.',
+        'Puerto Rico',
+        'Falkland Is.'
+      ];
+      break;
+    case 'Ottoman Empire':
+      coreNation = 'Turkey';
+      territoriesToConquer = [
+        'Syria',
+        'Iraq',
+        'Greece',
+        'Jordan',
+        'Israel',
+        'Palestine',
+        'N. Cyprus',
+        'Cyprus',
+        'Kuwait',
+        'Egypt',
+        'Bulgaria',
+        'Macedonia',
+        'Albania',
+        'Kosovo',
+        'Serbia',
+        'Montenegro',
+        'Bosnia and Herz.',
+        'Croatia',
+        'Slovenia',
+        'Georgia',
+        'Lebanon'
+      ];
+      break;
+    case 'African Union':
+      coreNation = 'South Africa';
+      territoriesToConquer = [
+        'Nigeria',
+        'Ethiopia',
+        'Egypt',
+        'Kenya',
+        'Tanzania',
+        'Sudan',
+        'Uganda',
+        'Ghana',
+        'Mozambique',
+        'Madagascar',
+        'Cameroon',
+        "Côte d'Ivoire",
+        'Algeria',
+        'Tunisia',
+        'Libya',
+        'Somalia',
+        'Somaliland',
+        'Zimbabwe',
+        'Zambia',
+        'Rwanda',
+        'Burundi',
+        'Malawi',
+        'Namibia',
+        'Botswana',
+        'Lesotho',
+        'eSwatini',
+        'Senegal',
+        'Mali',
+        'Burkina Faso',
+        'Niger',
+        'Chad',
+        'Central African Rep.',
+        'Congo', 
+        'Dem. Rep. Congo', 
+        'Gabon',
+        'Eq. Guinea',
+        'Benin',
+        'Togo',
+        'Guinea',
+        'S. Sudan',
+        'Guinea-Bissau',
+        'Sierra Leone',
+        'Liberia',
+        'Morocco',
+        'Gambia',
+        'Mauritania',
+        'W. Sahara',
+        'Eritrea',
+        'Djibouti',
+        'Comoros',
+        'Seychelles',
+        'Cape Verde',
+        'São Tomé and Príncipe',
+        'Angola',
+        'Mauritius'
+      ];
+      break;
+  }
+  
+  // Conquer all territories
+  territoriesToConquer.forEach(territory => {
+    conqueredTerritories[territory] = coreNation;
+    occupationStartYears[territory] = currentYear;
+  });
+  
+  // Rename core nation based on empire type
+  const empireMapping = empireNames[empireNames];
+  if (empireMapping) {
+    // Handle nested empire names (like Russia's multiple empires)
+    if (typeof empireMapping === 'object') {
+      const newName = empireMapping[empireName];
+      if (newName) {
+        // Update all references to the core nation
+        Object.keys(conqueredTerritories).forEach(territory => {
+          if (conqueredTerritories[territory] === coreNation) {
+            conqueredTerritories[territory] = newName;
+          }
+        });
+        
+        // Transfer military power and other data to new empire name
+        countryArmies[newName] = countryArmies[newName];
+        countryData.military[newName] = countryData.military[coreNation];
+        countryData.economy[newName] = countryData.economy[coreNation];
+        countryData.land[newName] = countryData.land[coreNation];
+        
+        // Delete old core nation data
+        delete countryArmies[coreNation];
+        delete countryData.military[coreNation];
+        delete countryData.economy[coreNation];
+        delete countryData.land[coreNation];
+      }
+    } else {
+      // Simple empire name mapping
+      Object.keys(conqueredTerritories).forEach(territory => {
+        if (conqueredTerritories[territory] === coreNation) {
+          conqueredTerritories[territory] = empireMapping;
+        }
+      });
+      
+      // Transfer military power and other data to new empire name
+      countryArmies[empireMapping] = countryArmies[coreNation];
+      countryData.military[empireMapping] = countryData.military[coreNation];
+      countryData.economy[empireMapping] = countryData.economy[coreNation];
+      countryData.land[empireMapping] = countryData.land[coreNation];
+      
+      // Delete old core nation data
+      delete countryArmies[coreNation];
+      delete countryData.military[coreNation];
+      delete countryData.economy[coreNation];
+      delete countryData.land[coreNation];
+    }
+  }
+  
+  // Update display
+  updateMap();
+  updateCategoryList();
+  
+  // Hide empire options
+  document.querySelector('.empire-options').style.display = 'none';
+}
+
+// Functions for giving troops
+function showGiveTroopsDialog() {
+  const dialog = document.querySelector('.troops-dialog');
+  const select = document.getElementById('country-select');
+  
+  // Clear existing options
+  select.innerHTML = '';
+  
+  // Get all available countries (not conquered)
+  const availableCountries = countries.features
+    .map(f => f.properties.name)
+    .filter(name => !conqueredTerritories[name])
+    .sort();
+  
+  // Add options for each country
+  availableCountries.forEach(country => {
+    const option = document.createElement('option');
+    option.value = country;
+    option.textContent = country;
+    select.appendChild(option);
+  });
+  
+  // Show dialog
+  dialog.style.display = 'flex';
+}
+
+function closeGiveTroopsDialog() {
+  document.querySelector('.troops-dialog').style.display = 'none';
+}
+
+function giveTroops() {
+  const country = document.getElementById('country-select').value;
+  const troops = parseInt(document.getElementById('troops-amount').value);
+  
+  if (!country || isNaN(troops) || troops < 0) {
+    alert('Please enter a valid number of troops');
+    return;
+  }
+  
+  // Update country's army
+  countryArmies[country] = (countryArmies[country] || 0) + troops;
+  
+  // Show success message
+  showBattleAlert(`🎁 Given ${troops.toLocaleString()} troops to ${country}`);
+  
+  // Update displays
+  updateMap();
+  updateCategoryList();
+  
+  // Close dialog
+  closeGiveTroopsDialog();
+  
+  // Clear input
+  document.getElementById('troops-amount').value = '';
+}
+
+function triggerRandomEvent() {
+  // Get list of possible events
+  const events = [];
+  
+  // Add War event if there are at least 2 unconquered countries
+  const availableCountries = countries.features
+    .map(f => f.properties.name)
+    .filter(name => !conqueredTerritories[name]);
+  
+  if (availableCountries.length >= 2) {
+    events.push('war');
+  }
+  
+  // Add recruitment and incident events if there are any unconquered countries
+  if (availableCountries.length > 0) {
+    events.push('recruitment');
+    events.push('incident');
+  }
+  
+  // Add independence event if there are any conquered territories
+  const conqueredCount = Object.keys(conqueredTerritories).length;
+  if (conqueredCount > 0) {
+    events.push('independence');
+  }
+  
+  // If no events are possible, show message and return
+  if (events.length === 0) {
+    showBattleAlert("⚠️ No random events are possible in the current state!");
+    return;
+  }
+  
+  // Pick random event
+  const event = events[Math.floor(Math.random() * events.length)];
+  
+  // Trigger selected event
+  switch(event) {
+    case 'war':
+      triggerRandomWar();
+      break;
+      
+    case 'recruitment':
+      // Pick random country
+      const recruitCountry = availableCountries[Math.floor(Math.random() * availableCountries.length)];
+      // Generate random number of recruits (500-2500)
+      const recruits = Math.floor(Math.random() * 2000) + 500;
+      // Add recruits
+      countryArmies[recruitCountry] = (countryArmies[recruitCountry] || 0) + recruits;
+      // Show alert
+      showBattleAlert(`⚔️ ${recruitCountry} has recruited ${recruits.toLocaleString()} new soldiers`, {
+        attacker: recruitCountry,
+        defender: recruitCountry
+      });
+      break;
+      
+    case 'incident':
+      // Pick random country with >1000 troops
+      const countriesWithTroops = availableCountries.filter(name => countryArmies[name] > 1000);
+      if (countriesWithTroops.length === 0) {
+        triggerRandomEvent(); // Try again if no eligible countries
+        return;
+      }
+      const incidentCountry = countriesWithTroops[Math.floor(Math.random() * countriesWithTroops.length)];
+      
+      // Generate random number of casualties (150-900)
+      const casualties = Math.floor(Math.random() * 750) + 150;
+      
+      // Pick random incident type
+      const incidents = [
+        "injuries during training exercises",
+        "soldiers quitting due to low morale",
+        "undetected mines in training grounds",
+        "equipment malfunction",
+        "training accident",
+        "food poisoning outbreak",
+        "mass desertion",
+        "vehicle collision",
+        "illness outbreak in barracks",
+        "helicopter crash during exercises"
+      ];
+      const incident = incidents[Math.floor(Math.random() * incidents.length)];
+      
+      // Update troops and show alert
+      countryArmies[incidentCountry] = Math.max(0, (countryArmies[incidentCountry] || 0) - casualties);
+      showBattleAlert(`⚠️ ${incidentCountry} has lost ${casualties.toLocaleString()} soldiers due to ${incident}`, {
+        attacker: incidentCountry,
+        defender: incidentCountry
+      });
+      break;
+      
+    case 'independence':
+      // Get list of conquered territories without independence movements
+      const eligibleTerritories = Object.keys(conqueredTerritories)
+        .filter(territory => !independenceMovements[territory]);
+      
+      if (eligibleTerritories.length === 0) {
+        triggerRandomEvent(); // Try again if no eligible territories
+        return;
+      }
+      
+      // Pick random territory
+      const territory = eligibleTerritories[Math.floor(Math.random() * eligibleTerritories.length)];
+      
+      // Start independence movement
+      independenceMovements[territory] = {
+        state: INDEPENDENCE_STATES.PROTESTS,
+        progress: 0,
+        startYear: currentYear
+      };
+      
+      // Show alert
+      showBattleAlert(`🗽 Independence movements have begun in ${territory}!`);
+      break;
+  }
+  
+  // Update displays
+  updateMap();
+  updateCategoryList();
+}
+</script>
+
+</body>
+</html>
