@@ -1,0 +1,54 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Generator</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> AI Image Generator</h1>
+            <p class="subtitle">Create stunning AI-generated images from text descriptions</p>
+        </div>
+        
+        <div class="input-section">
+            <div class="prompt-container">
+                <label for="prompt">Enter your image description:</label>
+                <textarea id="prompt" placeholder="e.g., A futuristic city with flying cars and tall skyscrapers..."></textarea>
+                <div class="prompt-tips">
+                    <i class="fas fa-lightbulb"></i>
+                    <span>Tip: Be specific and detailed in your description for better results</span>
+                </div>
+            </div>
+            <div class="controls">
+                <div class="control-group">
+                    <label for="imageCount">Number of Images:</label>
+                    <select id="imageCount">
+                        <option value="1">1 Image</option>
+                        <option value="2">2 Images</option>
+                        <option value="3">3 Images</option>
+                    </select>
+                </div>
+                <button id="generate">
+                    <i class="fas fa-magic"></i>
+                    Generate Images
+                </button>
+            </div>
+        </div>
+
+        <div class="results" id="results">
+            <!-- Generated images will appear here -->
+        </div>
+
+        <div class="loading" id="loading">
+            <svg class="spinner" viewBox="0 0 50 50">
+                <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+            </svg>
+            <p>Creating your masterpiece...</p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
