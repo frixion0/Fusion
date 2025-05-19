@@ -1,0 +1,520 @@
+import { useState, useEffect } from 'react';
+
+export default function App() {
+  const [prompt, setPrompt] = useState('');
+  const [model, setModel] = useState('provider-2/shuttle-3-diffusion');
+  const [models] = useState([
+    'provider-2/shuttle-3-diffusion',
+    'provider-2/shuttle-jaguar',
+    'provider-2/shuttle-3.1-aesthetic',
+    'provider-2/flux-1.1-pro-ultra-raw',
+    'provider-2/flux-1.1-pro-ultra',
+    'provider-2/flux-dev',
+    'provider-2/flux-schnell',
+  ]);
+  const [activeTab, setActiveTab] = useState('image');
+  const [images, setImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [enhancingPrompt, setEnhancingPrompt] = useState(false);
+  const [generatingAllModels, setGeneratingAllModels] = useState(false);
+  const [numImages, setNumImages] = useState(1);
+  const [chatLoading, setChatLoading] = useState(false);
+
+  // Feature: Prompt History
+  const [promptHistory, setPromptHistory] = useState(() => {
+    const saved = localStorage.getItem('promptHistory');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Feature: Image History
+  const [imageHistory, setImageHistory] = useState(() => {
+    const saved = localStorage.getItem('imageHistory');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Feature: Batch Prompt Comparison
+  const [batchPrompts, setBatchPrompts] = useState(['', '', '']);
+  const [batchResults, setBatchResults] = useState([]);
+  const [showBatchPanel, setShowBatchPanel] = useState(() => {
+    const saved = localStorage.getItem('showBatchPanel');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  // Feature: Side Panel
+  const [showSidePanel, setShowSidePanel] = useState(false);
+
+  // Save history to localStorage
+  useEffect(() => {
+    localStorage.setItem('promptHistory', JSON.stringify(promptHistory));
+  }, [promptHistory]);
+
+  useEffect(() => {
+    localStorage.setItem('imageHistory', JSON.stringify(imageHistory));
+  }, [imageHistory]);
+
+  useEffect(() => {
+    localStorage.setItem('showBatchPanel', JSON.stringify(showBatchPanel));
+  }, [showBatchPanel]);
+
+  // Random prompt suggestions
+  const randomPrompts = [
+    "A cyberpunk cityscape at night with neon lights",
+    "A majestic lion with a futuristic robotic exoskeleton",
+    "An abstract painting of a quantum computer",
+    "A fantasy forest with floating islands and waterfalls",
+    "A vintage spaceship landing on a retro-style alien planet"
+  ];
+
+  const generateImage = async (selectedModel = model, promptText = prompt) => {
+    if (!promptText.trim()) return null;
+
+    try {
+      const res = await fetch("https://api.devsdocode.com/v1/images/generations ", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ddc-free-8e5171eeac9148ed89969cc31002d99d"
+        },
+        body: JSON.stringify({
+          model: selectedModel,
+          prompt: promptText,
+          n: 1,
+          size: "1024x1024"
+        })
+      });
+
+      const text = await res.text();
+      
+      try {
+        const data = JSON.parse(text);
+        if (data?.data?.[0]?.b64_json) {
+          const imageUrl = `data:image/jpeg;base64,${data.data[0].b64_json}`;
+          
+          // Add to image history
+          setImageHistory(prev => [
+            { prompt: promptText, image: imageUrl, timestamp: Date.now() },
+            ...prev.slice(0, 9)
+          ]);
+
+          return imageUrl;
+        }
+      } catch {
+        console.error("Invalid JSON:", text);
+      }
+    } catch (err) {
+      console.error("Error:", err.message);
+    }
+    return null;
+  };
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) {
+      alert('Please enter a prompt before generating.');
+      return;
+    }
+
+    setIsLoading(true);
+    setImages([]);
+
+    const generatedImages = [];
+    
+    for (let i = 0; i < numImages; i++) {
+      const imageUrl = await generateImage();
+      if (imageUrl) generatedImages.push(imageUrl);
+    }
+
+    setImages(generatedImages);
+    setIsLoading(false);
+
+    // Add to prompt history
+    setPromptHistory(prev => [
+      { prompt, timestamp: Date.now(), tags: ['default'] },
+      ...prev.slice(0, 9)
+    ]);
+  };
+
+  const enhancePrompt = async () => {
+    if (!prompt.trim()) {
+      alert('Please enter a prompt to enhance.');
+      return;
+    }
+
+    setEnhancingPrompt(true);
+    
+    try {
+      const res = await fetch("https://api.devsdocode.com/v1/chat/completions ", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ddc-free-8e5171eeac9148ed89969cc31002d99d"
+        },
+        body: JSON.stringify({
+          model: "provider-2/gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "You are an AI prompt enhancer. Improve the given prompt while maintaining its core concept."
+            },
+            {
+              role: "user",
+              content: `Enhance this prompt: ${prompt}. Return only the enhanced prompt without any explanation.`
+            }
+          ]
+        })
+      });
+
+      const data = await res.json();
+      const enhanced = data.choices?.[0]?.message?.content || prompt;
+      setPrompt(enhanced.trim());
+    } catch (error) {
+      alert("Failed to enhance prompt.");
+      console.error(error);
+    }
+    
+    setEnhancingPrompt(false);
+  };
+
+  const generateAllModels = async () => {
+    if (!prompt.trim()) {
+      alert('Please enter a prompt before generating.');
+      return;
+    }
+
+    setGeneratingAllModels(true);
+    setImages([]);
+    
+    const generatedImages = [];
+    
+    for (const model of models) {
+      const imageUrl = await generateImage(model);
+      if (imageUrl) generatedImages.push({ model, url: imageUrl });
+    }
+
+    setImages(generatedImages);
+    setGeneratingAllModels(false);
+  };
+
+  const sendMessage = async () => {
+    if (!inputMessage.trim()) return;
+
+    const newMessage = { role: 'user', content: inputMessage };
+    const updatedMessages = [...chatMessages, newMessage];
+    setChatMessages(updatedMessages);
+    setInputMessage('');
+    setChatLoading(true);
+
+    try {
+      const res = await fetch("https://api.devsdocode.com/v1/chat/completions ", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ddc-free-8e5171eeac9148ed89969cc31002d99d"
+        },
+        body: JSON.stringify({
+          model: "provider-2/gpt-4o",
+          messages: [...updatedMessages]
+        })
+      });
+
+      const data = await res.json();
+      const assistantReply = data.choices?.[0]?.message?.content || "No response.";
+      
+      setChatMessages([
+        ...updatedMessages,
+        { role: 'assistant', content: assistantReply }
+      ]);
+    } catch (error) {
+      setChatMessages([...updatedMessages, { role: 'assistant', content: 'Error fetching response.' }]);
+    }
+    
+    setChatLoading(false);
+  };
+
+  const downloadImage = (dataUrl, index) => {
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = `generated-image-${Date.now()}-${index}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const getRandomPrompt = () => {
+    const randomIndex = Math.floor(Math.random() * randomPrompts.length);
+    setPrompt(randomPrompts[randomIndex]);
+  };
+
+  // --- BATCH PROMPT COMPARISON ---
+  const handleBatchGenerate = async () => {
+    if (!batchPrompts.some(p => p.trim())) {
+      alert('Enter at least one prompt to compare.');
+      return;
+    }
+
+    setIsLoading(true);
+    setBatchResults([]);
+
+    const results = [];
+
+    for (const batchPrompt of batchPrompts) {
+      if (batchPrompt.trim()) {
+        const imageUrl = await generateImage(model, batchPrompt);
+        results.push({ prompt: batchPrompt, image: imageUrl });
+      }
+    }
+
+    setBatchResults(results);
+    setIsLoading(false);
+  };
+
+  const updateBatchPrompt = (index, value) => {
+    const newBatch = [...batchPrompts];
+    newBatch[index] = value;
+    setBatchPrompts(newBatch);
+  };
+
+  const enhanceAllBatchPrompts = async () => {
+    if (!batchPrompts.some(p => p.trim())) {
+      alert('Enter at least one prompt to enhance.');
+      return;
+    }
+
+    setEnhancingPrompt(true);
+    
+    try {
+      const res = await fetch("https://api.devsdocode.com/v1/chat/completions ", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ddc-free-8e5171eeac9148ed89969cc31002d99d"
+        },
+        body: JSON.stringify({
+          model: "provider-2/gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "You are an AI prompt enhancer. Improve each prompt while maintaining their core concepts."
+            },
+            {
+              role: "user",
+              content: `Enhance these prompts:\n\n1. ${batchPrompts[0]}\n2. ${batchPrompts[1]}\n3. ${batchPrompts[2]}\n\nReturn only the enhanced versions, numbered like this:\n\n1. ...\n2. ...\n3. ...`
+            }
+          ]
+        })
+      });
+
+      const data = await res.json();
+      const enhancedText = data.choices?.[0]?.message?.content || "";
+
+      // Parse enhanced responses
+      const enhancedPrompts = enhancedText.split('\n')
+        .filter(line => line.trim().startsWith("1.") || line.trim().startsWith("2.") || line.trim().startsWith("3."))
+        .map(line => line.replace(/^\d+\.\s*/, '').trim());
+
+      if (enhancedPrompts.length === 3) {
+        setBatchPrompts(enhancedPrompts);
+      } else {
+        alert("Failed to parse enhanced prompts correctly.");
+      }
+    } catch (error) {
+      alert("Failed to enhance prompts.");
+      console.error(error);
+    }
+    
+    setEnhancingPrompt(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-600 text-white">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-center shadow-lg">
+        <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-200">
+          AI Creative Studio
+        </h1>
+        <p className="mt-2 text-gray-200">Generate images and chat with AI in one powerful interface</p>
+      </div>
+
+      {/* Navigation Tabs */}
+      <nav className="flex border-b border-gray-700 bg-gray-800">
+        <button
+          onClick={() => setActiveTab('image')}
+          className={`px-6 py-3 font-medium transition-colors ${
+            activeTab === 'image' 
+              ? 'border-b-2 border-purple-500 text-purple-400' 
+              : 'text-gray-400 hover:text-gray-200'
+          }`}
+        >
+          Image Generator
+        </button>
+        <button
+          onClick={() => setActiveTab('chat')}
+          className={`px-6 py-3 font-medium transition-colors ${
+            activeTab === 'chat' 
+              ? 'border-b-2 border-purple-500 text-purple-400' 
+              : 'text-gray-400 hover:text-gray-200'
+          }`}
+        >
+          Chat Bot
+        </button>
+      </nav>
+
+      {/* Main Content Area */}
+      <div className="max-w-6xl mx-auto px-4 py-6 relative">
+        {/* Floating Side Panel Trigger */}
+        <button
+          onClick={() => setShowSidePanel(!showSidePanel)}
+          className="fixed left-0 top-1/2 transform -translate-y-1/2 z-20 bg-gray-800 hover:bg-gray-700 text-white p-2 rounded-r-md shadow-lg"
+          title="Open history panel"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+          </svg>
+        </button>
+
+        {/* Side Panel */}
+        {showSidePanel && (
+          <div className="fixed left-0 top-0 h-full w-80 bg-gray-800 bg-opacity-95 backdrop-blur-lg shadow-xl z-10 overflow-y-auto p-4 transition-transform duration-300 ease-in-out transform translate-x-0">
+            <button
+              onClick={() => setShowSidePanel(false)}
+              className="absolute right-2 top-2 text-gray-400 hover:text-white"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+
+            <h3 className="font-bold text-lg mb-4 mt-4">History</h3>
+
+            {/* Prompt History */}
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold mb-2">Recent Prompts</h4>
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                {promptHistory.map((entry, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => setPrompt(entry.prompt)}
+                    className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 cursor-pointer text-sm truncate"
+                    title={entry.prompt}
+                  >
+                    {entry.prompt.substring(0, 60)}{entry.prompt.length > 60 ? '...' : ''}
+                  </div>
+                ))}
+                {promptHistory.length === 0 && (
+                  <p className="text-gray-500 text-xs">No prompts yet.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Image History */}
+            <div>
+              <h4 className="text-sm font-semibold mb-2">Image History</h4>
+              <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto pr-1">
+                {imageHistory.map((img, idx) => (
+                  <div key={idx} className="group relative aspect-square">
+                    <img
+                      src={img.image}
+                      alt="History"
+                      className="w-full h-full object-cover rounded-md group-hover:brightness-75 transition-all"
+                    />
+                    <button
+                      onClick={() => downloadImage(img.image, idx)}
+                      className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black bg-opacity-50 text-white p-1 rounded-md transition-opacity"
+                      title="Download"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+                {imageHistory.length === 0 && (
+                  <p className="text-gray-500 text-xs col-span-3">No images yet.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay when side panel is open */}
+        {showSidePanel && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-0"
+            onClick={() => setShowSidePanel(false)}
+          ></div>
+        )}
+
+        {/* Image Generator Tab */}
+        {activeTab === 'image' && (
+          <div className="relative">
+            {/* Prompt Controls */}
+            <div className="flex flex-wrap gap-4 items-end bg-gray-800 p-4 rounded-lg mb-6">
+              <div className="flex-grow min-w-[300px]">
+                <label htmlFor="prompt" className="block text-sm font-medium mb-2">Prompt:</label>
+                <textarea
+                  id="prompt"
+                  rows="3"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Describe the image you want to generate..."
+                  className="w-full p-3 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 text-white"
+                />
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={enhancePrompt}
+                  disabled={enhancingPrompt}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
+                >
+                  {enhancingPrompt ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Enhancing...
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                        <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13h7v1H4v-1z" clipRule="evenodd" />
+                      </svg>
+                      Enhance Prompt
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  onClick={getRandomPrompt}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z" />
+                  </svg>
+                  Random Prompt
+                </button>
+                
+                <button
+                  onClick={() => setPrompt('')}
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition-colors flex items-center justify-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            {/* Generation Settings */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div>
+                <label htmlFor="model" className="block text-sm font-medium mb-2">Model:</label>
+                <select
+                  id="model"
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  className="w-full p-3 ro
